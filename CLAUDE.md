@@ -46,7 +46,8 @@ applefm
 │   ├── describe [<key>]→ KeyMetadata display (type, valid values, range, description)
 │   ├── init            → Interactive setup wizard (stderr prompts, stdin input)
 │   └── preset [<name>] → Apply built-in preset (creative, precise, balanced)
-├── respond             → one-shot (ephemeral session)
+├── chat                → interactive REPL (auto-persisted session)
+├── respond             → one-shot (ephemeral session; no args + TTY → chat mode)
 └── generate            → one-shot structured output
 ```
 
@@ -58,7 +59,8 @@ applefm
 - **SessionStore** — Persists `SessionMetadata` + `Transcript` as JSON files under `~/.applefm/sessions/`. Validates session names (alphanumeric + hyphens/underscores, 1-100 chars)
 - **PromptInput** — Resolves prompt from: CLI argument > `--file` > stdin
 - **OutputFormatter** — Switches between text/json output via `--format`
-- **ResponseStreamer** — Common streaming output helper used by RespondCommand and SessionRespondCommand
+- **InteractiveLoop** — REPL engine with DI seams (`readInput`, `writeStderr`). Streams responses, persists transcript each turn, logs via HistoryStore/SessionLogger. Session name auto-generated as `chat-YYYYMMDD-HHmmss`
+- **ResponseStreamer** — Common streaming output helper used by RespondCommand, SessionRespondCommand, and InteractiveLoop
 - **AppError** — Maps `LanguageModelSession.GenerationError` cases to user messages and exit codes (2–11)
 - **SchemaLoader** — Parses JSON files into `DynamicGenerationSchema` for structured output
 - **OptionGroups** — `ParsableArguments` groups (GenerationOptionGroup, ModelOptionGroup, ToolOptionGroup) that eliminate option duplication across commands. Each group has a `withSettings(_:)` method that returns a copy with settings-based fallback values applied
@@ -81,7 +83,7 @@ Built-in tools (`ShellTool`, `FileReadTool`) use `@Generable` and `@Guide` macro
 
 Uses **Swift Testing** framework (`import Testing`, `@Suite`, `@Test`, `#expect`). Do NOT use XCTest.
 
-Unit tests cover: OutputFormatter, PromptInput, SessionStore, SettingsStore, Settings, SchemaLoader, TranscriptFormatter, ToolRegistry, ModelFactory, AppError, HistoryStore, SessionLogger. Integration tests are gated by `APPLEFM_INTEGRATION_TESTS` environment variable and require a device with Foundation Models available.
+Unit tests cover: OutputFormatter, PromptInput, SessionStore, SettingsStore, Settings, SchemaLoader, TranscriptFormatter, ToolRegistry, ModelFactory, AppError, HistoryStore, SessionLogger, InteractiveLoop. Integration tests are gated by `APPLEFM_INTEGRATION_TESTS` environment variable and require a device with Foundation Models available.
 
 ## Documentation Rule
 

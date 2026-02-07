@@ -48,5 +48,3 @@ struct ModelAvailabilityCommand: AsyncParsableCommand {
         }
     }
 }
-
-extension OutputFormat: ExpressibleByArgument {}

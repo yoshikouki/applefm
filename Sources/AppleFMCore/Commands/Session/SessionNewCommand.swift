@@ -13,11 +13,8 @@ struct SessionNewCommand: AsyncParsableCommand {
     @Option(name: .long, help: "System instructions for the session")
     var instructions: String?
 
-    @Option(name: .long, help: "Guardrails level (default or permissive)")
-    var guardrails: GuardrailsOption = .default
-
-    @Option(name: .long, help: "Path to adapter file")
-    var adapter: String?
+    @OptionGroup var modelOptions: ModelOptionGroup
+    @OptionGroup var toolOptions: ToolOptionGroup
 
     @Option(name: .long, help: "Output format (text or json)")
     var format: OutputFormat = .text
@@ -29,15 +26,22 @@ struct SessionNewCommand: AsyncParsableCommand {
             throw AppError.invalidInput("Session '\(name)' already exists.")
         }
 
-        let model = try ModelFactory.createModel(guardrails: guardrails, adapterPath: adapter)
+        let model = try modelOptions.createModel()
+        let tools = try toolOptions.resolveTools()
         let session: LanguageModelSession
         if let instructions {
-            session = LanguageModelSession(model: model, instructions: instructions)
+            session = LanguageModelSession(model: model, tools: tools, instructions: instructions)
         } else {
-            session = LanguageModelSession(model: model)
+            session = LanguageModelSession(model: model, tools: tools)
         }
 
-        let metadata = SessionMetadata(name: name, instructions: instructions)
+        let metadata = SessionMetadata(
+            name: name,
+            instructions: instructions,
+            guardrails: modelOptions.guardrails?.rawValue,
+            adapterPath: modelOptions.adapter,
+            tools: toolOptions.tool.isEmpty ? nil : toolOptions.tool
+        )
         try store.saveMetadata(metadata)
         try store.saveTranscript(session.transcript, name: name)
 

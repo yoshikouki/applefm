@@ -9,6 +9,7 @@ struct ConfigCommand: AsyncParsableCommand {
             ConfigGetCommand.self,
             ConfigSetCommand.self,
             ConfigResetCommand.self,
+            ConfigDescribeCommand.self,
         ],
         defaultSubcommand: ConfigListCommand.self
     )

@@ -15,7 +15,13 @@ struct ConfigSetCommand: AsyncParsableCommand {
     func run() async throws {
         let store = SettingsStore()
         var settings = store.load()
+        let oldValue = settings.value(forKey: key)
         try settings.setValue(value, forKey: key)
         try store.save(settings)
+        if let old = oldValue {
+            print("Set \(key) = \(value) (was: \(old))")
+        } else {
+            print("Set \(key) = \(value)")
+        }
     }
 }

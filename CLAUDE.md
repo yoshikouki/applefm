@@ -19,7 +19,7 @@ Requires **macOS 26+** and **Swift 6.2**. Foundation Models availability depends
 
 ## Architecture
 
-Two-target split: `AppleFMCore` (library with all logic) + `applefm` (thin `@main` entry point). Tests import `AppleFMCore` directly.
+Two-target split: `AppleFMCore` (library with all logic) + `applefm` (thin entry point with async dispatch). Tests import `AppleFMCore` directly.
 
 ### Command Tree → API Mapping
 
@@ -66,6 +66,10 @@ Unit tests cover: OutputFormatter, PromptInput, SessionStore, SchemaLoader, Tran
 
 重要な変更（アーキテクチャ変更、新コマンド追加、API マッピング変更）や重要な躓き（API の実際の挙動がドキュメントと異なる、ビルドエラーの回避策など）があった場合は、関連する docs（`docs/cli-design.md`, `.claude/skills/foundation-models/references/api-reference.md`, この `CLAUDE.md`）を必ず更新すること。コードだけ変えてドキュメントを放置しない。
 
+## Workflow
+
+変更のたびにコミットする。小さな単位でこまめにコミットし、変更を積み上げていく。
+
 ## Key Constraints
 
 - `LanguageModelSession` is the center of all generation — respond, stream, generate, and tools all require a session
@@ -74,3 +78,4 @@ Unit tests cover: OutputFormatter, PromptInput, SessionStore, SchemaLoader, Tran
 - `GenerationOptions.sampling` supports `.greedy`, `.random(probabilityThreshold:seed:)`, `.random(top:seed:)` — CLI exposes via `--sampling`, `--sampling-threshold`, `--sampling-top`, `--sampling-seed`
 - Guardrails cannot be fully disabled; `.permissiveContentTransformations` is the most relaxed option
 - `@Generable`/`@Guide` macros are compile-time only — CLI uses `DynamicGenerationSchema` for user-provided schemas
+- `AsyncParsableCommand` の sync `main()` は DEBUG ビルドで即座に終了する — `main.swift` では `parseAsRoot()` + async `run()` で直接ディスパッチすること（`AppleFM.main()` を呼ばない）

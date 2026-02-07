@@ -27,7 +27,9 @@ struct SessionListCommand: AsyncParsableCommand {
             dateFormatter.timeStyle = .short
             let lines = sessions.map { meta in
                 let date = dateFormatter.string(from: meta.createdAt)
-                let instructions = meta.instructions.map { " (\($0.prefix(40))...)" } ?? ""
+                let instructions = meta.instructions.map { inst in
+                    inst.count > 40 ? " (\(inst.prefix(40))...)" : " (\(inst))"
+                } ?? ""
                 return "\(meta.name)  \(date)\(instructions)"
             }
             print(lines.joined(separator: "\n"))

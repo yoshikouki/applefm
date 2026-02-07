@@ -128,3 +128,14 @@ let restoredSession = LanguageModelSession(tools: [...], transcript: transcript)
 - Tool calling パターン: `references/tool-calling.md`
 - Guided Generation 詳細: `references/guided-generation.md`
 - ベストプラクティス: `references/best-practices.md`
+- Navigator 全展開カバレッジ: `references/navigator-coverage.md`
+- Essentials 記事まとめ: `references/essentials.md`
+- Prompting 記事まとめ: `references/prompting.md`
+- Tool API 詳細: `references/tool-api.md`
+- Tool メンバー一覧: `references/tool-members.md`
+- SystemLanguageModel 詳細: `references/systemlanguagemodel.md`
+- SystemLanguageModel メンバー一覧: `references/systemlanguagemodel-members.md`
+- LanguageModelSession メンバー一覧: `references/languagemodelsession-members.md`
+- Transcript メンバー一覧: `references/transcript-members.md`
+- カスタム Adapter: `references/adapter.md`
+- Content Tagging: `references/content-tagging.md`

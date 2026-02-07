@@ -179,3 +179,13 @@ applefm respond "Summarize README.md" --tool shell --tool file-read
 - `isResponding` — CLI は単発実行のため不要
 - `Generable` 型の静的 Guided Generation — コンパイル時型が必要。Dynamic Schema で代替
 - `includeSchemaInPrompt` — 静的 Generable 専用パラメータ
+
+## 設計判断
+
+### コマンド間の共通ロジック
+
+`RespondCommand` と `SessionRespondCommand`（および `GenerateCommand` と `SessionGenerateCommand`）は類似のロジックを持つ。これは意図的な設計判断である:
+
+- **薄いラッパー原則**: 各コマンドは Foundation Models API の薄いラッパーであり、コマンド自体のロジックは最小限に留める。共通化のためにコマンド間の抽象レイヤーを追加すると、この原則に反する
+- **共通化はユーティリティレベルに留める**: `ResponseStreamer`、`OutputFormatter`、`PromptInput`、`OptionGroups` などの共通ユーティリティで重複を最小化。コマンドの `run()` メソッド内のオーケストレーションは各コマンドが責任を持つ
+- **独立した進化**: ワンショットコマンドとセッションコマンドは今後異なる方向に進化する可能性がある（例: セッション側のみにツール永続化、ワンショット側のみにバッチ実行など）。過度な共通化は将来の柔軟性を損なう

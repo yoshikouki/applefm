@@ -15,10 +15,12 @@ applefm
 │   ├── generate <name>     → session.respond(to:schema:options:)
 │   ├── transcript <name>   → session.transcript
 │   ├── list                → ~/.applefm/sessions/ 列挙
-│   └── delete <name>       → セッション削除
-├── respond                 → ワンショット (一時 session)
+│   └── delete <name>       → セッション削除 (--force で確認スキップ)
+├── respond                 → ワンショット (一時 session) [デフォルトサブコマンド]
 └── generate                → ワンショット guided generation
 ```
+
+> **設計メモ**: `model prewarm` は `model` サブグループに配置している。`prewarm` は内部的に `LanguageModelSession` を使用するが、ユーザーの視点ではモデルの準備操作であるため、`model` グループに属する方が直感的。
 
 ## API マッピング
 
@@ -50,17 +52,23 @@ applefm
 | `--sampling-seed` | `UInt64` | なし | ランダムサンプリングシード |
 | `--guardrails` | `default` / `permissive` | `default` | ガードレールレベル |
 | `--adapter` | `String` (パス) | なし | カスタムアダプターファイルパス |
+| `--instructions` | `String` | なし | システムインストラクション (ワンショットコマンド) |
 | `--stream` | `Bool` | `false` | ストリーミング出力 |
+| `--schema` | `String` (パス) | なし | JSON スキーマファイル (generate コマンド) |
 | `--tool` | `String` (反復可) | なし | 有効にするビルトインツール |
 | `--tool-approval` | `ask` / `auto` | `ask` | ツール承認モード |
+| `--force` | `Bool` | `false` | 確認プロンプトをスキップ (session delete) |
+
+**制約**: `--stream` と `--format json` の同時使用は不可。`validate()` でバリデーションエラーを返す。
 
 ### オプショングループ（実装上の共通化）
 
-共通オプションは `ParsableArguments` 準拠の4グループに分離されている:
+共通オプションは `ParsableArguments` 準拠の3グループに分離されている:
 - `GenerationOptionGroup`: maxTokens, temperature, sampling 系6オプション
 - `ModelOptionGroup`: guardrails, adapter
-- `OutputOptionGroup`: format
 - `ToolOptionGroup`: tool, toolApproval
+
+> **注**: `OutputOptionGroup` は v1.0.0 で削除。`format` オプションのデフォルト値がコマンドによって異なるため（respond 系は `.text`、generate 系は `.json`）、共通グループ化せず各コマンドで直接定義。
 
 ### ツール承認
 
@@ -72,10 +80,10 @@ applefm
 
 ### ビルトインツール
 
-| ツール名 | 説明 |
-|---|---|
-| `shell` | シェルコマンドを実行して結果を返す |
-| `file-read` | ファイルの内容を読み取る |
+| ツール名 | 説明 | 安全機能 |
+|---|---|---|
+| `shell` | シェルコマンドを実行して結果を返す | 60秒タイムアウト |
+| `file-read` | ファイルの内容を読み取る | センシティブパス警告 |
 
 使用例:
 ```bash
@@ -88,13 +96,13 @@ applefm respond "Summarize README.md" --tool shell --tool file-read
 | GenerationError | 終了コード | ユーザーメッセージ |
 |---|---|---|
 | `exceededContextWindowSize` | 2 | "Context window exceeded. Start a new session or reduce prompt size." |
-| `guardrailViolation` | 3 | "Request was blocked by safety guardrails." |
+| `guardrailViolation` | 3 | "Request was blocked by safety guardrails. Try rephrasing or use --guardrails permissive." |
 | `rateLimited` | 4 | "Rate limited. Please wait and try again." |
 | `refusal` | 5 | "Model refused the request." |
-| `unsupportedLanguageOrLocale` | 6 | "Unsupported language or locale." |
-| `assetsUnavailable` | 7 | "Model assets are unavailable." |
+| `unsupportedLanguageOrLocale` | 6 | "Unsupported language or locale. Use 'applefm model languages' to see supported languages." |
+| `assetsUnavailable` | 7 | "Model assets are unavailable. Check that Apple Intelligence is enabled in System Settings." |
 | `unsupportedGuide` | 8 | "Unsupported generation guide." |
-| `decodingFailure` | 9 | "Failed to decode generated content." |
+| `decodingFailure` | 9 | "Failed to decode generated content. Check your schema file for correctness." |
 | モデル未利用可能 | 10 | "Foundation Models is not available." + UnavailableReason |
 | `concurrentRequests` | 11 | "Concurrent requests are not supported." |
 | その他 | 1 | エラーメッセージそのまま |
@@ -135,7 +143,7 @@ applefm respond "Summarize README.md" --tool shell --tool file-read
 4. transcript が空の場合: `LanguageModelSession(model:tools:instructions:)` で instructions 付きセッションを作成
 5. transcript が空でない場合: `LanguageModelSession(model:tools:transcript:)` で復元
 6. コマンドラインで明示されたオプションはメタデータの値より優先
-7. 新しいレスポンス後、transcript を再保存
+7. 新しいレスポンス後、transcript を再保存（`defer` で生成エラー時も部分保存）
 
 ## プロンプト入力
 
@@ -143,6 +151,8 @@ applefm respond "Summarize README.md" --tool shell --tool file-read
 1. コマンドライン引数 (`applefm session respond test "Hello"`)
 2. ファイル (`--file prompt.txt`)
 3. 標準入力 (`echo "Hello" | applefm session respond test`)
+
+入力サイズ上限: 10MB（ファイル・stdin ともに）
 
 ## Foundation Models API カバレッジ
 

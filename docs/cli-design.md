@@ -16,6 +16,14 @@ applefm
 │   ├── transcript <name>   → session.transcript
 │   ├── list                → ~/.applefm/sessions/ 列挙
 │   └── delete <name>       → セッション削除 (--force で確認スキップ)
+├── config
+│   ├── set <key> <value>   → SettingsStore.save (個別キー、バリデーション付き)
+│   ├── get <key>           → SettingsStore.load + value(forKey:)
+│   ├── list [--all]        → SettingsStore.load + allValues() (--all で未設定キーも表示)
+│   ├── reset [<key>]       → SettingsStore.reset / removeValue(forKey:)
+│   ├── describe [<key>]    → KeyMetadata 表示 (型、有効値、範囲、説明)
+│   ├── init                → 対話式セットアップウィザード
+│   └── preset [<name>]     → ビルトインプリセット適用 (creative, precise, balanced)
 ├── respond                 → ワンショット (一時 session) [デフォルトサブコマンド]
 └── generate                → ワンショット guided generation
 ```
@@ -38,6 +46,13 @@ applefm
 | `session delete` | ファイルシステム | セッション削除 |
 | `respond` | 一時 `LanguageModelSession` + `respond` | ワンショット生成 |
 | `generate` | 一時 `LanguageModelSession` + `respond(schema:)` | ワンショット構造化出力 |
+| `config set` | `SettingsStore` | 設定値の個別保存 |
+| `config get` | `SettingsStore` | 設定値の取得 |
+| `config list` | `SettingsStore` | 全設定の一覧 |
+| `config reset` | `SettingsStore` | 設定のリセット |
+| `config describe` | `KeyMetadata` | キーの説明表示 |
+| `config init` | `SettingsStore` | 対話式初期設定 |
+| `config preset` | `Settings.Preset` | プリセット適用 |
 
 ## 共通オプション
 
@@ -113,10 +128,37 @@ applefm respond "Summarize README.md" --tool shell --tool file-read
 
 ```
 ~/.applefm/
+├── settings.json              # Settings (CLI オプションのデフォルト値)
+├── history.jsonl              # コマンド履歴 (HistoryEntry の JSONL)
 └── sessions/
-    ├── <name>.json          # SessionMetadata (名前、作成日時、instructions、guardrails、adapter、tools)
-    └── <name>.transcript    # Transcript の JSON エンコード
+    ├── <name>.json            # SessionMetadata (名前、作成日時、instructions、guardrails、adapter、tools)
+    ├── <name>.transcript      # Transcript の JSON エンコード
+    └── log-<date>-<id>.jsonl  # セッション詳細ログ (SessionLogEntry の JSONL)
 ```
+
+### 設定の優先順位
+
+CLI オプション > settings.json > ビルトインデフォルト
+
+各 OptionGroup の `withSettings()` メソッドが、CLI で未指定のオプションに対して settings.json の値をフォールバックとして適用する。
+
+### ロギング
+
+`logEnabled` 設定が `true`（デフォルト）の場合、以下のログが自動記録される。
+
+#### コマンド履歴 (history.jsonl)
+- ファイル: `~/.applefm/history.jsonl`
+- 形式: JSONL (1行1エントリ)
+- 記録: sessionId, タイムスタンプ, プロンプトテキスト, 作業ディレクトリ
+- パーミッション: ファイル 0o600、ディレクトリ 0o700
+
+#### セッション詳細ログ
+- ファイル: `~/.applefm/sessions/log-<yyyy-MM-dd>-<sessionId>.jsonl`
+- 形式: JSONL (1行1エントリ)
+- 記録: user/assistant/error イベント
+- パーミッション: ファイル 0o600、ディレクトリ 0o700
+
+無効化: `applefm config set logEnabled false` または環境変数 `APPLEFM_NO_LOG=1`
 
 ### セッション名バリデーション
 

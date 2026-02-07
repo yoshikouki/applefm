@@ -176,7 +176,31 @@ applefm respond "Hello" --temperature 1.0  # Uses 1.0, not 0.7
 
 Setting values are validated: invalid enum values, out-of-range numbers, and key typos are caught with helpful error messages.
 
-All setting keys correspond to CLI option names (camelCase): `maxTokens`, `temperature`, `sampling`, `samplingThreshold`, `samplingTop`, `samplingSeed`, `guardrails`, `adapter`, `tools`, `toolApproval`, `format`, `stream`, `instructions`.
+All setting keys correspond to CLI option names (camelCase): `maxTokens`, `temperature`, `sampling`, `samplingThreshold`, `samplingTop`, `samplingSeed`, `guardrails`, `adapter`, `tools`, `toolApproval`, `format`, `stream`, `instructions`, `logEnabled`.
+
+## Logging
+
+applefm automatically records command history and session logs (enabled by default).
+
+### Command History
+
+All prompts are recorded in `~/.applefm/history.jsonl` with session ID, timestamp, prompt text, and working directory.
+
+### Session Logs
+
+Session commands (`session respond`, `session generate`) write detailed logs to `~/.applefm/sessions/log-<date>-<sessionId>.jsonl`, recording user prompts, assistant responses, and errors.
+
+### Disabling Logging
+
+```bash
+# Via config
+applefm config set logEnabled false
+
+# Via environment variable
+APPLEFM_NO_LOG=1 applefm respond "Hello"
+```
+
+Log files are stored with restricted permissions (file: 0600, directory: 0700) to protect conversation content.
 
 ## Structured Output
 

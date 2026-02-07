@@ -30,6 +30,10 @@ struct FileReadTool: Tool {
         }
 
         let url = URL(fileURLWithPath: arguments.path)
-        return try String(contentsOf: url, encoding: .utf8)
+        do {
+            return try String(contentsOf: url, encoding: .utf8)
+        } catch {
+            return "Error reading file '\(arguments.path)': \(error.localizedDescription)"
+        }
     }
 }

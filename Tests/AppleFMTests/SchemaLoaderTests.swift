@@ -152,6 +152,35 @@ struct SchemaLoaderTests {
         _ = try SchemaLoader.parseDynamicSchema(from: ["type": "boolean"])
     }
 
+    @Test("load JSON Schema with enum constraint converts to anyOf")
+    func loadEnumConstraintSchema() throws {
+        let json = """
+        {
+            "name": "Sentiment",
+            "properties": {
+                "sentiment": {
+                    "type": "string",
+                    "enum": ["positive", "negative", "neutral"],
+                    "description": "The sentiment of the text"
+                }
+            },
+            "required": ["sentiment"]
+        }
+        """
+        let data = Data(json.utf8)
+        _ = try SchemaLoader.load(from: data)
+    }
+
+    @Test("parseDynamicSchema handles enum field")
+    func parseDynamicSchemaEnum() throws {
+        let dict: [String: Any] = [
+            "name": "Status",
+            "description": "A status value",
+            "enum": ["active", "inactive", "pending"]
+        ]
+        _ = try SchemaLoader.parseDynamicSchema(from: dict)
+    }
+
     @Test("parseDynamicSchema with empty dictionary creates valid schema")
     func parseDynamicSchemaEmpty() throws {
         _ = try SchemaLoader.parseDynamicSchema(from: [:])

@@ -40,6 +40,17 @@ public struct SchemaLoader: Sendable {
         let description = dict["description"] as? String
         let type = dict["type"] as? String
 
+        // JSON Schema "enum" (convert to anyOf)
+        if let enumValues = dict["enum"] as? [String] {
+            return DynamicGenerationSchema(
+                name: name,
+                description: description,
+                anyOf: enumValues.map { choice in
+                    DynamicGenerationSchema(name: choice, description: nil, anyOf: [choice])
+                }
+            )
+        }
+
         // anyOf (string enum)
         if let anyOf = dict["anyOf"] as? [String] {
             return DynamicGenerationSchema(

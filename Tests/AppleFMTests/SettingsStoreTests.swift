@@ -176,7 +176,7 @@ struct SettingsTests {
     func validKeysComplete() {
         let expected = ["maxTokens", "temperature", "sampling", "samplingThreshold",
                         "samplingTop", "samplingSeed", "guardrails", "adapter",
-                        "tools", "toolApproval", "format", "stream", "instructions"]
+                        "tools", "toolApproval", "format", "stream", "instructions", "logEnabled"]
         for key in expected {
             #expect(Settings.validKeys.contains(key))
         }
@@ -275,6 +275,35 @@ struct SettingsTests {
         } catch {
             #expect(Bool(false), "Wrong error type")
         }
+    }
+
+    // MARK: - logEnabled Tests
+
+    @Test("setValue parses logEnabled boolean")
+    func setValueLogEnabled() throws {
+        var settings = Settings()
+        try settings.setValue("false", forKey: "logEnabled")
+        #expect(settings.logEnabled == false)
+        try settings.setValue("true", forKey: "logEnabled")
+        #expect(settings.logEnabled == true)
+    }
+
+    @Test("value(forKey:) returns logEnabled")
+    func valueForKeyLogEnabled() {
+        let settings = Settings(logEnabled: false)
+        #expect(settings.value(forKey: "logEnabled") == "false")
+    }
+
+    @Test("isLogEnabled defaults to true")
+    func isLogEnabledDefault() {
+        let settings = Settings()
+        #expect(settings.isLogEnabled == true)
+    }
+
+    @Test("isLogEnabled respects setting")
+    func isLogEnabledSetting() {
+        let settings = Settings(logEnabled: false)
+        #expect(settings.isLogEnabled == false)
     }
 
     // MARK: - KeyMetadata Tests

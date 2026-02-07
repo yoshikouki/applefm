@@ -52,6 +52,23 @@ applefm
 | `--adapter` | `String` (パス) | なし | カスタムアダプターファイルパス |
 | `--stream` | `Bool` | `false` | ストリーミング出力 |
 | `--tool` | `String` (反復可) | なし | 有効にするビルトインツール |
+| `--tool-approval` | `ask` / `auto` | `ask` | ツール承認モード |
+
+### オプショングループ（実装上の共通化）
+
+共通オプションは `ParsableArguments` 準拠の4グループに分離されている:
+- `GenerationOptionGroup`: maxTokens, temperature, sampling 系6オプション
+- `ModelOptionGroup`: guardrails, adapter
+- `OutputOptionGroup`: format
+- `ToolOptionGroup`: tool, toolApproval
+
+### ツール承認
+
+`--tool-approval` はツール呼び出し時のユーザー確認モードを制御する:
+- `ask`（デフォルト）: 各ツール呼び出し前に stderr で確認プロンプトを表示し、y/N の入力を待つ
+- `auto`: 確認なしで即時実行。非インタラクティブ環境や信頼できるパイプライン用
+
+パイプ入力（stdin が tty でない）の場合、`ask` モードではツール実行を拒否し、`--tool-approval auto` の使用を促すメッセージを表示する。
 
 ### ビルトインツール
 
@@ -89,9 +106,13 @@ applefm respond "Summarize README.md" --tool shell --tool file-read
 ```
 ~/.applefm/
 └── sessions/
-    ├── <name>.json          # SessionMetadata (名前、作成日時、instructions)
+    ├── <name>.json          # SessionMetadata (名前、作成日時、instructions、guardrails、adapter、tools)
     └── <name>.transcript    # Transcript の JSON エンコード
 ```
+
+### セッション名バリデーション
+
+セッション名は英数字・ハイフン・アンダースコアのみ許可（1-100文字）。パストラバーサル防止のため、`../` や `/` を含む名前は拒否される。
 
 ### SessionMetadata
 
@@ -99,16 +120,22 @@ applefm respond "Summarize README.md" --tool shell --tool file-read
 {
   "name": "my-session",
   "createdAt": "2025-06-01T12:00:00Z",
-  "instructions": "You are a helpful assistant."
+  "instructions": "You are a helpful assistant.",
+  "guardrails": "default",
+  "adapterPath": null,
+  "tools": ["shell", "file-read"]
 }
 ```
 
 ### セッション復元フロー
 
-1. `~/.applefm/sessions/<name>.transcript` を読み込み
-2. `Transcript` を JSON デコード
-3. `LanguageModelSession(model:tools:transcript:)` で復元
-4. 新しいレスポンス後、transcript を再保存
+1. `~/.applefm/sessions/<name>.json` からメタデータを読み込み（guardrails, adapter, tools のフォールバック値を取得）
+2. `~/.applefm/sessions/<name>.transcript` を読み込み
+3. `Transcript` を JSON デコード
+4. transcript が空の場合: `LanguageModelSession(model:tools:instructions:)` で instructions 付きセッションを作成
+5. transcript が空でない場合: `LanguageModelSession(model:tools:transcript:)` で復元
+6. コマンドラインで明示されたオプションはメタデータの値より優先
+7. 新しいレスポンス後、transcript を再保存
 
 ## プロンプト入力
 

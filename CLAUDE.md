@@ -46,11 +46,14 @@ applefm
 
 - **ModelFactory** — Centralized `SystemLanguageModel` creation with guardrails/adapter selection and `GenerationOptions` building
 - **ToolRegistry** — Maps `--tool` string names ("shell", "file-read") to compiled `Tool` protocol implementations
-- **SessionStore** — Persists `SessionMetadata` + `Transcript` as JSON files under `~/.applefm/sessions/`
+- **ToolApproval** — Controls user confirmation before tool execution (`ask` mode prompts via stderr, `auto` mode skips)
+- **SessionStore** — Persists `SessionMetadata` + `Transcript` as JSON files under `~/.applefm/sessions/`. Validates session names (alphanumeric + hyphens/underscores, 1-100 chars)
 - **PromptInput** — Resolves prompt from: CLI argument > `--file` > stdin
 - **OutputFormatter** — Switches between text/json output via `--format`
+- **ResponseStreamer** — Common streaming output helper used by RespondCommand and SessionRespondCommand
 - **AppError** — Maps `LanguageModelSession.GenerationError` cases to user messages and exit codes (2–11)
 - **SchemaLoader** — Parses JSON files into `DynamicGenerationSchema` for structured output
+- **OptionGroups** — `ParsableArguments` groups (GenerationOptionGroup, ModelOptionGroup, OutputOptionGroup, ToolOptionGroup) that eliminate option duplication across commands
 
 ### Tool Protocol Pattern
 
@@ -60,7 +63,7 @@ Built-in tools (`ShellTool`, `FileReadTool`) use `@Generable` and `@Guide` macro
 
 Uses **Swift Testing** framework (`import Testing`, `@Suite`, `@Test`, `#expect`). Do NOT use XCTest.
 
-Unit tests cover: OutputFormatter, PromptInput, SessionStore, SchemaLoader, TranscriptFormatter, ToolRegistry, ModelFactory. Integration tests require a device with Foundation Models available.
+Unit tests cover: OutputFormatter, PromptInput, SessionStore, SchemaLoader, TranscriptFormatter, ToolRegistry, ModelFactory, AppError. Integration tests are gated by `APPLEFM_INTEGRATION_TESTS` environment variable and require a device with Foundation Models available.
 
 ## Documentation Rule
 

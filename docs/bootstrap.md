@@ -28,10 +28,11 @@ Apple の Foundation Models（FoundationModels framework）を macOS で気軽�
 2. 上記を踏まえ、**CLIサブコマンド設計案を作る**（公式APIに寄せる）
     - 1.0.0のコマンドツリー案を提案し、根拠として「公式APIの型/メソッド名との対応」を説明すること
     - respondはsessionが必須なら、CLIでも `session respond` を基本にする（単発aliasは後回しでも良い）
-3. セキュリティ/安全性の基本方針を決める
-    - ツール呼び出しはデフォルトで **ask（確認）**。`-tool-approval auto` は明示しない限りONにしない
-    - ログは `~/.applefm/` に保存する
-    - transcript保存やログの扱いも検討
+3. セキュリティ/安全性の基本方針を決める ✅ **実装済み**
+    - ツール呼び出しはデフォルトで **ask（確認）**。`--tool-approval auto` は明示しない限りONにしない → **ToolApproval 実装済み**
+    - セッション名バリデーション（パストラバーサル防止）→ **SessionStore.validateSessionName 実装済み**
+    - ログは `~/.applefm/` に保存する → **SessionStore でセッション永続化済み**
+    - transcript保存やログの扱いも検討 → **Transcript 永続化済み**
 4. 実装の最小骨組み（Swift Package + ArgumentParser）を提示
     - いきなり全部実装ではなく、1.0.0に向けて “積み上げ可能” な構造を作る
     - コマンド定義、共通オプション（GenerationOptions相当）、Sessionの永続化（名前→ファイル）などの設計を出す

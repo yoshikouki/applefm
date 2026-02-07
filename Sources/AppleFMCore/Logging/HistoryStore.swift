@@ -48,9 +48,8 @@ public struct HistoryStore: Sendable {
             handle.write(Data(line.utf8))
         } else {
             try Data(line.utf8).write(to: historyURL, options: .atomic)
-            // Set file permissions to 0600
-            try fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: historyURL.path)
         }
+        try fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: historyURL.path)
     }
 
     /// テスト用: 全エントリを読み込む

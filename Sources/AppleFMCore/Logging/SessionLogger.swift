@@ -91,8 +91,8 @@ public struct SessionLogger: Sendable {
             handle.write(Data(line.utf8))
         } else {
             try Data(line.utf8).write(to: url, options: .atomic)
-            try fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
         }
+        try fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
     }
 
     public func deleteLog(sessionId: String) throws {

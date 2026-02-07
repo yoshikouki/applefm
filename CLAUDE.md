@@ -39,10 +39,13 @@ applefm
 │   ├── transcript      → session.transcript
 │   ├── list / delete   → filesystem ops on ~/.applefm/sessions/
 ├── config
-│   ├── set <key> <val> → SettingsStore.save (individual key)
+│   ├── set <key> <val> → SettingsStore.save (individual key, with validation)
 │   ├── get <key>       → SettingsStore.load + value(forKey:)
-│   ├── list            → SettingsStore.load + allValues()
-│   └── reset [<key>]   → SettingsStore.reset / removeValue(forKey:)
+│   ├── list [--all]    → SettingsStore.load + allValues() (--all shows unset keys)
+│   ├── reset [<key>]   → SettingsStore.reset / removeValue(forKey:)
+│   ├── describe [<key>]→ KeyMetadata display (type, valid values, range, description)
+│   ├── init            → Interactive setup wizard (stderr prompts, stdin input)
+│   └── preset [<name>] → Apply built-in preset (creative, precise, balanced)
 ├── respond             → one-shot (ephemeral session)
 └── generate            → one-shot structured output
 ```
@@ -60,7 +63,7 @@ applefm
 - **SchemaLoader** — Parses JSON files into `DynamicGenerationSchema` for structured output
 - **OptionGroups** — `ParsableArguments` groups (GenerationOptionGroup, ModelOptionGroup, ToolOptionGroup) that eliminate option duplication across commands. Each group has a `withSettings(_:)` method that returns a copy with settings-based fallback values applied
 - **SettingsStore** — Persists `Settings` as `~/.applefm/settings.json`. Priority: CLI option > settings.json > built-in default. DI via `baseDirectory` init parameter
-- **Settings** — All-optional `Codable` struct with key-value access (`value(forKey:)`, `setValue(_:forKey:)`, `removeValue(forKey:)`)
+- **Settings** — All-optional `Codable` struct with key-value access (`value(forKey:)`, `setValue(_:forKey:)`, `removeValue(forKey:)`). Includes `KeyMetadata` for discoverability, value validation (enum/range checks), `suggestKey(for:)` for typo correction, and built-in `Preset` definitions
 
 ### Tool Protocol Pattern
 

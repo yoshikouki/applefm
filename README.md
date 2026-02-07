@@ -61,10 +61,13 @@ applefm
 │   ├── list                List all sessions
 │   └── delete <name>       Delete a session (--force to skip confirmation)
 ├── config
-│   ├── set <key> <value>   Set a default value
+│   ├── set <key> <value>   Set a default value (with validation)
 │   ├── get <key>           Get a setting value
-│   ├── list                List all settings (default)
-│   └── reset [<key>]       Reset settings (key or all)
+│   ├── list [--all]        List settings (--all shows unset keys too)
+│   ├── reset [<key>]       Reset settings (key or all)
+│   ├── describe [<key>]    Describe a key (type, valid values, range)
+│   ├── init                Interactive setup wizard
+│   └── preset [<name>]     Apply a built-in preset
 ├── respond                 One-shot generation (default command)
 └── generate                One-shot structured output
 ```
@@ -154,9 +157,24 @@ applefm config get temperature
 applefm config reset temperature   # Reset single key
 applefm config reset               # Reset all
 
+# Discover available settings
+applefm config describe            # List all keys with descriptions
+applefm config describe temperature  # Detailed info for a key
+
+# Interactive setup
+applefm config init                # Guided wizard for common settings
+
+# Apply presets
+applefm config preset              # List available presets
+applefm config preset creative     # Apply creative preset (temperature=1.5)
+applefm config preset precise      # Apply precise preset (temperature=0.2, sampling=greedy)
+applefm config preset balanced     # Apply balanced preset (temperature=0.7)
+
 # CLI options override settings
 applefm respond "Hello" --temperature 1.0  # Uses 1.0, not 0.7
 ```
+
+Setting values are validated: invalid enum values, out-of-range numbers, and key typos are caught with helpful error messages.
 
 All setting keys correspond to CLI option names (camelCase): `maxTokens`, `temperature`, `sampling`, `samplingThreshold`, `samplingTop`, `samplingSeed`, `guardrails`, `adapter`, `tools`, `toolApproval`, `format`, `stream`, `instructions`.
 

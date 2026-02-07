@@ -59,6 +59,42 @@ struct SessionLoggerTests {
         #expect(files.isEmpty)
     }
 
+    @Test("directory has 0700 permissions")
+    func directoryPermissions() throws {
+        let logger = SessionLogger(baseDirectory: testDir)
+        defer { try? FileManager.default.removeItem(at: testDir) }
+
+        try logger.log(SessionLogEntry(type: "user", text: "test"), sessionId: "perm-test")
+        let attrs = try FileManager.default.attributesOfItem(atPath: testDir.path)
+        let perms = attrs[.posixPermissions] as? Int
+        #expect(perms == 0o700)
+    }
+
+    @Test("log file has 0600 permissions")
+    func filePermissions() throws {
+        let logger = SessionLogger(baseDirectory: testDir)
+        defer { try? FileManager.default.removeItem(at: testDir) }
+
+        try logger.log(SessionLogEntry(type: "user", text: "test"), sessionId: "perm-test")
+        let files = try logger.findLogFiles(sessionId: "perm-test")
+        let attrs = try FileManager.default.attributesOfItem(atPath: files[0].path)
+        let perms = attrs[.posixPermissions] as? Int
+        #expect(perms == 0o600)
+    }
+
+    @Test("existing file retains 0600 permissions after append")
+    func existingFilePermissions() throws {
+        let logger = SessionLogger(baseDirectory: testDir)
+        defer { try? FileManager.default.removeItem(at: testDir) }
+
+        try logger.log(SessionLogEntry(type: "user", text: "first"), sessionId: "perm-test")
+        try logger.log(SessionLogEntry(type: "assistant", text: "second"), sessionId: "perm-test")
+        let files = try logger.findLogFiles(sessionId: "perm-test")
+        let attrs = try FileManager.default.attributesOfItem(atPath: files[0].path)
+        let perms = attrs[.posixPermissions] as? Int
+        #expect(perms == 0o600)
+    }
+
     @Test("multiple entries appended to same file")
     func multipleEntries() throws {
         let logger = SessionLogger(baseDirectory: testDir)

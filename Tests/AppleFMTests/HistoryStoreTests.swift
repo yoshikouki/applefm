@@ -42,6 +42,42 @@ struct HistoryStoreTests {
         #expect(entries[2].text == "third")
     }
 
+    @Test("directory has 0700 permissions")
+    func directoryPermissions() throws {
+        let store = HistoryStore(baseDirectory: testDir)
+        defer { try? FileManager.default.removeItem(at: testDir) }
+
+        try store.append(HistoryEntry(sessionId: "x", ts: 1, text: "test", cwd: "/"))
+        let attrs = try FileManager.default.attributesOfItem(atPath: testDir.path)
+        let perms = attrs[.posixPermissions] as? Int
+        #expect(perms == 0o700)
+    }
+
+    @Test("history file has 0600 permissions")
+    func filePermissions() throws {
+        let store = HistoryStore(baseDirectory: testDir)
+        defer { try? FileManager.default.removeItem(at: testDir) }
+
+        try store.append(HistoryEntry(sessionId: "x", ts: 1, text: "test", cwd: "/"))
+        let historyURL = testDir.appendingPathComponent("history.jsonl")
+        let attrs = try FileManager.default.attributesOfItem(atPath: historyURL.path)
+        let perms = attrs[.posixPermissions] as? Int
+        #expect(perms == 0o600)
+    }
+
+    @Test("existing file retains 0600 permissions after append")
+    func existingFilePermissions() throws {
+        let store = HistoryStore(baseDirectory: testDir)
+        defer { try? FileManager.default.removeItem(at: testDir) }
+
+        try store.append(HistoryEntry(sessionId: "x", ts: 1, text: "first", cwd: "/"))
+        try store.append(HistoryEntry(sessionId: "y", ts: 2, text: "second", cwd: "/"))
+        let historyURL = testDir.appendingPathComponent("history.jsonl")
+        let attrs = try FileManager.default.attributesOfItem(atPath: historyURL.path)
+        let perms = attrs[.posixPermissions] as? Int
+        #expect(perms == 0o600)
+    }
+
     @Test("append creates directory if not exists")
     func createsDirectory() throws {
         let nested = testDir.appendingPathComponent("nested")

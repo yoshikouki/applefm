@@ -60,6 +60,11 @@ applefm
 │   ├── transcript <name>   View session history
 │   ├── list                List all sessions
 │   └── delete <name>       Delete a session (--force to skip confirmation)
+├── config
+│   ├── set <key> <value>   Set a default value
+│   ├── get <key>           Get a setting value
+│   ├── list                List all settings (default)
+│   └── reset [<key>]       Reset settings (key or all)
 ├── respond                 One-shot generation (default command)
 └── generate                One-shot structured output
 ```
@@ -130,6 +135,30 @@ applefm session delete coding --force  # skip confirmation
 ```
 
 Sessions are stored in `~/.applefm/sessions/` as JSON files.
+
+## Configuration
+
+Set default values for CLI options in `~/.applefm/settings.json`. CLI options always take priority over settings.
+
+```bash
+# Set defaults
+applefm config set temperature 0.7
+applefm config set stream true
+applefm config set tools shell,file-read
+
+# View settings
+applefm config list
+applefm config get temperature
+
+# Reset
+applefm config reset temperature   # Reset single key
+applefm config reset               # Reset all
+
+# CLI options override settings
+applefm respond "Hello" --temperature 1.0  # Uses 1.0, not 0.7
+```
+
+All setting keys correspond to CLI option names (camelCase): `maxTokens`, `temperature`, `sampling`, `samplingThreshold`, `samplingTop`, `samplingSeed`, `guardrails`, `adapter`, `tools`, `toolApproval`, `format`, `stream`, `instructions`.
 
 ## Structured Output
 

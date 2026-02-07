@@ -38,6 +38,11 @@ applefm
 │   ├── generate <name> → session.respond(to:schema:options:)
 │   ├── transcript      → session.transcript
 │   ├── list / delete   → filesystem ops on ~/.applefm/sessions/
+├── config
+│   ├── set <key> <val> → SettingsStore.save (individual key)
+│   ├── get <key>       → SettingsStore.load + value(forKey:)
+│   ├── list            → SettingsStore.load + allValues()
+│   └── reset [<key>]   → SettingsStore.reset / removeValue(forKey:)
 ├── respond             → one-shot (ephemeral session)
 └── generate            → one-shot structured output
 ```
@@ -53,7 +58,9 @@ applefm
 - **ResponseStreamer** — Common streaming output helper used by RespondCommand and SessionRespondCommand
 - **AppError** — Maps `LanguageModelSession.GenerationError` cases to user messages and exit codes (2–11)
 - **SchemaLoader** — Parses JSON files into `DynamicGenerationSchema` for structured output
-- **OptionGroups** — `ParsableArguments` groups (GenerationOptionGroup, ModelOptionGroup, OutputOptionGroup, ToolOptionGroup) that eliminate option duplication across commands
+- **OptionGroups** — `ParsableArguments` groups (GenerationOptionGroup, ModelOptionGroup, ToolOptionGroup) that eliminate option duplication across commands. Each group has a `withSettings(_:)` method that returns a copy with settings-based fallback values applied
+- **SettingsStore** — Persists `Settings` as `~/.applefm/settings.json`. Priority: CLI option > settings.json > built-in default. DI via `baseDirectory` init parameter
+- **Settings** — All-optional `Codable` struct with key-value access (`value(forKey:)`, `setValue(_:forKey:)`, `removeValue(forKey:)`)
 
 ### Tool Protocol Pattern
 
@@ -63,7 +70,7 @@ Built-in tools (`ShellTool`, `FileReadTool`) use `@Generable` and `@Guide` macro
 
 Uses **Swift Testing** framework (`import Testing`, `@Suite`, `@Test`, `#expect`). Do NOT use XCTest.
 
-Unit tests cover: OutputFormatter, PromptInput, SessionStore, SchemaLoader, TranscriptFormatter, ToolRegistry, ModelFactory, AppError. Integration tests are gated by `APPLEFM_INTEGRATION_TESTS` environment variable and require a device with Foundation Models available.
+Unit tests cover: OutputFormatter, PromptInput, SessionStore, SettingsStore, Settings, SchemaLoader, TranscriptFormatter, ToolRegistry, ModelFactory, AppError. Integration tests are gated by `APPLEFM_INTEGRATION_TESTS` environment variable and require a device with Foundation Models available.
 
 ## Documentation Rule
 

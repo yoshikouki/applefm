@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "properties": {
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "title": { "type": "string" },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "subtasks": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "completed": { "type": "boolean" }
+        },
+        "required": ["id", "title", "priority", "subtasks", "completed"]
+      }
+    },
+    "summary": { "type": "string" },
+    "totalCount": { "type": "integer" }
+  },
+  "required": ["tasks", "summary", "totalCount"]
+}

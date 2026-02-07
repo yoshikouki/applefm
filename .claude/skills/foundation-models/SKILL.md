@@ -118,9 +118,25 @@ let restoredSession = LanguageModelSession(tools: [...], transcript: transcript)
 
 - **Context window**: 有限。超過時は `exceededContextWindowSize` エラー。タスク分割で対処。
 - **Single request**: セッションは同時に1リクエストのみ (`isResponding` で確認)。
-- **Tools**: 3-5 個が推奨上限。description は短く。
-- **Guardrails**: デフォルトで安全性チェックあり。`permissiveContentTransformations` で緩和可能。
-- **Languages**: `model.supportsLocale()` で確認。`Instructions` でロケール指定。
+- **Tools**: 3-5 個が推奨上限。description は短く。ツール呼び出し時のレイテンシは 20-34倍増加。
+- **Guardrails**: デフォルトで安全性チェックあり。`permissiveContentTransformations` で緩和可能。**日本語プロンプトでは permissive 推奨** (文化的トピックのブロックが過度)。
+- **Languages**: 15言語対応 (da, de, en, es, fr, it, ja, ko, nb, nl, pt, sv, tr, vi, zh)。英語が最高品質 (A)、日本語は B- (事実の正確性に課題)。
+- **Temperature**: 0.0 で完全に決定論的。2.0 でも品質崩壊しない (Apple FM 固有特性)。
+- **Guided Generation**: フラット〜1段ネストは 100% 精度。配列内オブジェクト 5+プロパティで構造崩壊。Enum 遵守率 100%。
+- **Performance**: 生成速度 ~35 トークン/秒。Cold start 5-15秒、Warm 0.3-2秒。レイテンシのばらつき大 (3-10倍)。
+
+## Model Characteristics (実機テスト結果)
+
+モデルの性能特性、パラメータ推奨値、既知の制限事項: `references/model-characteristics.md`
+
+個別調査レポート (生データ):
+- テキスト生成品質: `references/research/01-text-generation.md`
+- パラメータ感度: `references/research/02-parameter-sensitivity.md`
+- 構造化出力精度: `references/research/03-structured-output.md`
+- ツール呼び出し精度: `references/research/04-tool-calling.md`
+- マルチターン会話: `references/research/05-multi-turn.md`
+- 多言語対応: `references/research/06-multilingual.md`
+- パフォーマンス測定: `references/research/07-performance.md`
 
 ## References
 
@@ -139,3 +155,4 @@ let restoredSession = LanguageModelSession(tools: [...], transcript: transcript)
 - Transcript メンバー一覧: `references/transcript-members.md`
 - カスタム Adapter: `references/adapter.md`
 - Content Tagging: `references/content-tagging.md`
+- **モデル特性ガイド (実機テスト)**: `references/model-characteristics.md`

@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "properties": {
+    "title": { "type": "string" },
+    "author": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" }
+      },
+      "required": ["name", "email"]
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "rating": { "type": "number" }
+  },
+  "required": ["title", "author", "tags", "rating"]
+}

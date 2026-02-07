@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "sentiment": {
+      "type": "string",
+      "enum": ["positive", "negative", "neutral"]
+    },
+    "confidence": { "type": "number" },
+    "reasoning": { "type": "string" }
+  },
+  "required": ["sentiment", "confidence", "reasoning"]
+}

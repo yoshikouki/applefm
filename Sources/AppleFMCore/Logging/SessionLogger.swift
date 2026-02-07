@@ -69,6 +69,12 @@ public struct SessionLogger: Sendable {
     }
 
     public func log(_ entry: SessionLogEntry, sessionId: String) throws {
+        guard !sessionId.isEmpty,
+              !sessionId.contains("/"),
+              !sessionId.contains(".."),
+              sessionId.count <= 200 else {
+            throw AppError.invalidInput("Invalid session ID for logging.")
+        }
         try ensureDirectoryExists()
         let url = logFileURL(sessionId: sessionId)
         let encoder = JSONEncoder()

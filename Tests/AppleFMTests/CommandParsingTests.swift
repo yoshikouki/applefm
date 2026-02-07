@@ -37,9 +37,9 @@ struct CommandParsingTests {
         #expect(subcommandNames.contains("preset"))
     }
 
-    @Test("version is set to 1.1.0")
+    @Test("version is set to 1.1.1")
     func versionString() {
-        #expect(AppleFM.configuration.version == "1.1.0")
+        #expect(AppleFM.configuration.version == "1.1.1")
     }
 
     @Test("RespondCommand rejects --stream with --format json")

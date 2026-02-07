@@ -4,7 +4,7 @@ public struct AppleFM: AsyncParsableCommand {
     public static let configuration = CommandConfiguration(
         commandName: "applefm",
         abstract: "A thin CLI wrapper for Apple Foundation Models",
-        version: "1.1.0",
+        version: "1.1.1",
         subcommands: [
             ModelCommand.self,
             SessionCommand.self,

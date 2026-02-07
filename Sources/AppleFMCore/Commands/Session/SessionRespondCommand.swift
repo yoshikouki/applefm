@@ -83,7 +83,10 @@ struct SessionRespondCommand: AsyncParsableCommand {
         do {
             if effectiveStream {
                 let responseStream = session.streamResponse(to: promptText, options: options)
-                try await ResponseStreamer.stream(responseStream)
+                let finalText = try await ResponseStreamer.stream(responseStream)
+                if settings.isLogEnabled {
+                    try? SessionLogger().log(SessionLogEntry(type: "assistant", text: finalText), sessionId: name)
+                }
             } else {
                 let response = try await session.respond(to: promptText, options: options)
                 let formatter = OutputFormatter(format: effectiveFormat)

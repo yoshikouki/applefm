@@ -9,6 +9,7 @@ public struct AppleFM: AsyncParsableCommand {
             ModelCommand.self,
             SessionCommand.self,
             ConfigCommand.self,
+            ChatCommand.self,
             RespondCommand.self,
             GenerateCommand.self,
         ],

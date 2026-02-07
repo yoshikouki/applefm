@@ -1,4 +1,5 @@
 import ArgumentParser
+import Darwin
 import Foundation
 import FoundationModels
 
@@ -52,6 +53,33 @@ struct RespondCommand: AsyncParsableCommand {
             session = LanguageModelSession(model: model, tools: tools, instructions: effectiveInstructions)
         } else {
             session = LanguageModelSession(model: model, tools: tools)
+        }
+
+        // No prompt + no file + TTY → interactive mode
+        if prompt == nil && file == nil && isatty(fileno(Darwin.stdin)) != 0 {
+            let sessionName = InteractiveLoop.generateSessionName()
+            let store = SessionStore()
+
+            let metadata = SessionMetadata(
+                name: sessionName,
+                instructions: effectiveInstructions,
+                guardrails: modelOptions.guardrails?.rawValue,
+                adapterPath: modelOptions.adapter,
+                tools: toolOptions.tool.isEmpty ? nil : toolOptions.tool
+            )
+            try store.saveMetadata(metadata)
+            try store.saveTranscript(session.transcript, name: sessionName)
+
+            let options = genOpts.makeOptions()
+
+            await InteractiveLoop().run(
+                session: session,
+                sessionName: sessionName,
+                store: store,
+                options: options,
+                settings: settings
+            )
+            return
         }
 
         let promptText = try PromptInput.resolve(argument: prompt, filePath: file)

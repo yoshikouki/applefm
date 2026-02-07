@@ -21,6 +21,7 @@ struct CommandParsingTests {
         #expect(subcommandNames.contains("model"))
         #expect(subcommandNames.contains("session"))
         #expect(subcommandNames.contains("config"))
+        #expect(subcommandNames.contains("chat"))
         #expect(subcommandNames.contains("respond"))
         #expect(subcommandNames.contains("generate"))
     }

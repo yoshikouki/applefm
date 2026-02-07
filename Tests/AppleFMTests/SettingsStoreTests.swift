@@ -66,6 +66,41 @@ struct SettingsStoreTests {
         #expect(loaded.temperature == 0.9)
     }
 
+    @Test("load returns default settings when JSON is corrupted")
+    func loadCorruptedJson() throws {
+        let store = SettingsStore(baseDirectory: testDir)
+        defer { try? FileManager.default.removeItem(at: testDir) }
+
+        try FileManager.default.createDirectory(at: testDir, withIntermediateDirectories: true)
+        try Data("{ invalid json".utf8).write(to: testDir.appendingPathComponent("settings.json"))
+
+        let loaded = store.load()
+        #expect(loaded == Settings())
+    }
+
+    @Test("load returns default settings when file contains unexpected type")
+    func loadUnexpectedType() throws {
+        let store = SettingsStore(baseDirectory: testDir)
+        defer { try? FileManager.default.removeItem(at: testDir) }
+
+        try FileManager.default.createDirectory(at: testDir, withIntermediateDirectories: true)
+        try Data("[]".utf8).write(to: testDir.appendingPathComponent("settings.json"))
+
+        let loaded = store.load()
+        #expect(loaded == Settings())
+    }
+
+    @Test("directory has 0700 permissions after save")
+    func directoryPermissions() throws {
+        let store = SettingsStore(baseDirectory: testDir)
+        defer { try? FileManager.default.removeItem(at: testDir) }
+
+        try store.save(Settings(temperature: 0.5))
+        let attrs = try FileManager.default.attributesOfItem(atPath: testDir.path)
+        let perms = attrs[.posixPermissions] as? Int
+        #expect(perms == 0o700)
+    }
+
     @Test("all fields are optional in JSON")
     func emptyJsonLoads() throws {
         let store = SettingsStore(baseDirectory: testDir)
@@ -76,6 +111,49 @@ struct SettingsStoreTests {
 
         let loaded = store.load()
         #expect(loaded == Settings())
+    }
+}
+
+@Suite("OptionGroup withSettings Tests")
+struct OptionGroupWithSettingsTests {
+    @Test("ToolOptionGroup withSettings applies toolApproval when not set by CLI")
+    func toolApprovalFromSettings() throws {
+        let settings = Settings(toolApproval: "auto")
+        let group = try ToolOptionGroup.parse([])
+        let result = group.withSettings(settings)
+        #expect(result.toolApproval == .auto)
+    }
+
+    @Test("ToolOptionGroup withSettings does not override CLI-specified toolApproval")
+    func toolApprovalCLIOverride() throws {
+        let settings = Settings(toolApproval: "auto")
+        let group = try ToolOptionGroup.parse(["--tool-approval", "ask"])
+        let result = group.withSettings(settings)
+        #expect(result.toolApproval == .ask)
+    }
+
+    @Test("ToolOptionGroup withSettings leaves nil when settings has no toolApproval")
+    func toolApprovalBothNil() throws {
+        let settings = Settings()
+        let group = try ToolOptionGroup.parse([])
+        let result = group.withSettings(settings)
+        #expect(result.toolApproval == nil)
+    }
+
+    @Test("ToolOptionGroup withSettings applies tools from settings")
+    func toolsFromSettings() throws {
+        let settings = Settings(tools: ["shell"])
+        let group = try ToolOptionGroup.parse([])
+        let result = group.withSettings(settings)
+        #expect(result.tool == ["shell"])
+    }
+
+    @Test("ToolOptionGroup withSettings does not override CLI-specified tools")
+    func toolsCLIOverride() throws {
+        let settings = Settings(tools: ["shell"])
+        let group = try ToolOptionGroup.parse(["--tool", "file-read"])
+        let result = group.withSettings(settings)
+        #expect(result.tool == ["file-read"])
     }
 }
 

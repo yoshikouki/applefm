@@ -95,6 +95,60 @@ struct SessionLoggerTests {
         #expect(perms == 0o600)
     }
 
+    @Test("log entry contains correct JSON fields")
+    func logEntryContent() throws {
+        let logger = SessionLogger(baseDirectory: testDir)
+        defer { try? FileManager.default.removeItem(at: testDir) }
+
+        let entry = SessionLogEntry(ts: 1234567890, type: "user", text: "Hello world")
+        try logger.log(entry, sessionId: "content-test")
+
+        let files = try logger.findLogFiles(sessionId: "content-test")
+        let content = try String(contentsOf: files[0], encoding: .utf8)
+        let lines = content.split(separator: "\n")
+        #expect(lines.count == 1)
+
+        let data = Data(lines[0].utf8)
+        let decoded = try JSONDecoder().decode(SessionLogEntry.self, from: data)
+        #expect(decoded.ts == 1234567890)
+        #expect(decoded.type == "user")
+        #expect(decoded.text == "Hello world")
+        #expect(decoded.tokens == nil)
+        #expect(decoded.tool == nil)
+    }
+
+    @Test("error entry contains error fields")
+    func errorEntryContent() throws {
+        let logger = SessionLogger(baseDirectory: testDir)
+        defer { try? FileManager.default.removeItem(at: testDir) }
+
+        let entry = SessionLogEntry(ts: 1000, type: "error", code: "E001", message: "Something went wrong")
+        try logger.log(entry, sessionId: "error-test")
+
+        let files = try logger.findLogFiles(sessionId: "error-test")
+        let content = try String(contentsOf: files[0], encoding: .utf8)
+        let data = Data(content.split(separator: "\n")[0].utf8)
+        let decoded = try JSONDecoder().decode(SessionLogEntry.self, from: data)
+        #expect(decoded.type == "error")
+        #expect(decoded.code == "E001")
+        #expect(decoded.message == "Something went wrong")
+        #expect(decoded.text == nil)
+    }
+
+    @Test("rejects invalid sessionId with path traversal")
+    func rejectsInvalidSessionId() {
+        let logger = SessionLogger(baseDirectory: testDir)
+        #expect(throws: AppError.self) {
+            try logger.log(SessionLogEntry(type: "user", text: "test"), sessionId: "../escape")
+        }
+        #expect(throws: AppError.self) {
+            try logger.log(SessionLogEntry(type: "user", text: "test"), sessionId: "foo/bar")
+        }
+        #expect(throws: AppError.self) {
+            try logger.log(SessionLogEntry(type: "user", text: "test"), sessionId: "")
+        }
+    }
+
     @Test("multiple entries appended to same file")
     func multipleEntries() throws {
         let logger = SessionLogger(baseDirectory: testDir)

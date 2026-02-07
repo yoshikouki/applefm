@@ -7,6 +7,10 @@ struct SessionCommand: AsyncParsableCommand {
         subcommands: [
             SessionNewCommand.self,
             SessionRespondCommand.self,
+            SessionGenerateCommand.self,
+            SessionTranscriptCommand.self,
+            SessionListCommand.self,
+            SessionDeleteCommand.self,
         ]
     )
 }

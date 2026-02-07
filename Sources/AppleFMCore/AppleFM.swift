@@ -8,7 +8,10 @@ public struct AppleFM: AsyncParsableCommand {
         subcommands: [
             ModelCommand.self,
             SessionCommand.self,
-        ]
+            RespondCommand.self,
+            GenerateCommand.self,
+        ],
+        defaultSubcommand: RespondCommand.self
     )
 
     public init() {}

@@ -13,9 +13,22 @@ extension ToolApprovalMode: ExpressibleByArgument {}
 /// ツール呼び出し時のユーザー承認を管理する
 public struct ToolApproval: Sendable {
     public let mode: ToolApprovalMode
+    let isInteractive: @Sendable () -> Bool
+    let readInput: @Sendable () -> String?
+    let writeStderr: @Sendable (String) -> Void
 
-    public init(mode: ToolApprovalMode = .ask) {
+    public init(
+        mode: ToolApprovalMode = .ask,
+        isInteractive: @escaping @Sendable () -> Bool = { isatty(fileno(Darwin.stdin)) != 0 },
+        readInput: @escaping @Sendable () -> String? = { Swift.readLine()?.lowercased() },
+        writeStderr: @escaping @Sendable (String) -> Void = { message in
+            FileHandle.standardError.write(Data(message.utf8))
+        }
+    ) {
         self.mode = mode
+        self.isInteractive = isInteractive
+        self.readInput = readInput
+        self.writeStderr = writeStderr
     }
 
     /// ツール実行前にユーザーの承認を求める
@@ -28,17 +41,12 @@ public struct ToolApproval: Sendable {
         case .auto:
             return true
         case .ask:
-            // stdin が tty でない場合（パイプ入力）は拒否
-            guard isatty(fileno(Darwin.stdin)) != 0 else {
-                FileHandle.standardError.write(
-                    Data("[applefm] Tool '\(toolName)' requires approval. Use --tool-approval auto for non-interactive use.\n".utf8)
-                )
+            guard isInteractive() else {
+                writeStderr("[applefm] Tool '\(toolName)' requires approval. Use --tool-approval auto for non-interactive use.\n")
                 return false
             }
-            FileHandle.standardError.write(
-                Data("[applefm] Tool '\(toolName)' wants to execute:\n  \(description)\nAllow? [y/N] ".utf8)
-            )
-            guard let input = Swift.readLine()?.lowercased() else {
+            writeStderr("[applefm] Tool '\(toolName)' wants to execute:\n  \(description)\nAllow? [y/N] ")
+            guard let input = readInput() else {
                 return false
             }
             return input == "y" || input == "yes"

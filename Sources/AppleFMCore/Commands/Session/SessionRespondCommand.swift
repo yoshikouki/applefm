@@ -23,6 +23,18 @@ struct SessionRespondCommand: AsyncParsableCommand {
     @Option(name: .long, help: "Temperature for sampling (0.0-2.0)")
     var temperature: Double?
 
+    @Option(name: .long, help: "Sampling mode (greedy)")
+    var sampling: SamplingModeOption?
+
+    @Option(name: .long, help: "Random sampling probability threshold (0.0-1.0)")
+    var samplingThreshold: Double?
+
+    @Option(name: .long, help: "Random sampling top-k count")
+    var samplingTop: Int?
+
+    @Option(name: .long, help: "Random sampling seed")
+    var samplingSeed: UInt64?
+
     @Option(name: .long, help: "Guardrails level (default or permissive)")
     var guardrails: GuardrailsOption = .default
 
@@ -48,7 +60,10 @@ struct SessionRespondCommand: AsyncParsableCommand {
         let tools = try ToolRegistry.resolve(names: tool)
         let session = LanguageModelSession(model: model, tools: tools, transcript: transcript)
         let promptText = try PromptInput.resolve(argument: prompt, filePath: file)
-        let options = ModelFactory.makeGenerationOptions(maxTokens: maxTokens, temperature: temperature)
+        let samplingMode = ModelFactory.resolveSamplingMode(
+            mode: sampling, threshold: samplingThreshold, top: samplingTop, seed: samplingSeed
+        )
+        let options = ModelFactory.makeGenerationOptions(maxTokens: maxTokens, temperature: temperature, sampling: samplingMode)
 
         do {
             if stream {

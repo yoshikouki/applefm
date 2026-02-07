@@ -43,7 +43,11 @@ applefm
 |---|---|---|---|
 | `--format` | `text` / `json` | `text` | 出力フォーマット |
 | `--max-tokens` | `Int` | なし | 最大レスポンストークン数 |
-| `--temperature` | `Double` | なし | 温度パラメータ (0.0-1.0) |
+| `--temperature` | `Double` | なし | 温度パラメータ (0.0-2.0) |
+| `--sampling` | `greedy` | なし | サンプリングモード (greedy) |
+| `--sampling-threshold` | `Double` | なし | ランダムサンプリング確率閾値 (0.0-1.0) |
+| `--sampling-top` | `Int` | なし | ランダムサンプリング top-k |
+| `--sampling-seed` | `UInt64` | なし | ランダムサンプリングシード |
 | `--guardrails` | `default` / `permissive` | `default` | ガードレールレベル |
 | `--adapter` | `String` (パス) | なし | カスタムアダプターファイルパス |
 | `--stream` | `Bool` | `false` | ストリーミング出力 |
@@ -125,7 +129,7 @@ applefm respond "Summarize README.md" --tool shell --tool file-read
 - `session.respond(to:schema:options:)` — Dynamic Schema 構造化出力
 - `session.streamResponse(to:options:)` — ストリーミング
 - `session.prewarm(promptPrefix:)` — プリウォーム
-- `GenerationOptions` — maximumResponseTokens, temperature
+- `GenerationOptions` — maximumResponseTokens, temperature, sampling (greedy / random)
 - `Tool` protocol — ShellTool, FileReadTool ビルトインツール
 - `Transcript` — 表示、永続化、復元
 - `GenerationError` — 全ケースのエラーハンドリング

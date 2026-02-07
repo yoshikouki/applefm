@@ -18,6 +18,12 @@ public enum GuardrailsOption: String, CaseIterable, Sendable {
 
 extension GuardrailsOption: ExpressibleByArgument {}
 
+public enum SamplingModeOption: String, CaseIterable, Sendable {
+    case greedy
+}
+
+extension SamplingModeOption: ExpressibleByArgument {}
+
 public enum ModelFactory {
     public static func createModel(
         guardrails: GuardrailsOption = .default,
@@ -37,9 +43,31 @@ public enum ModelFactory {
         return model
     }
 
+    public static func resolveSamplingMode(
+        mode: SamplingModeOption? = nil,
+        threshold: Double? = nil,
+        top: Int? = nil,
+        seed: UInt64? = nil
+    ) -> GenerationOptions.SamplingMode? {
+        if let mode {
+            switch mode {
+            case .greedy:
+                return .greedy
+            }
+        }
+        if let threshold {
+            return .random(probabilityThreshold: threshold, seed: seed)
+        }
+        if let top {
+            return .random(top: top, seed: seed)
+        }
+        return nil
+    }
+
     public static func makeGenerationOptions(
         maxTokens: Int? = nil,
-        temperature: Double? = nil
+        temperature: Double? = nil,
+        sampling: GenerationOptions.SamplingMode? = nil
     ) -> GenerationOptions {
         var options = GenerationOptions()
         if let maxTokens {
@@ -47,6 +75,9 @@ public enum ModelFactory {
         }
         if let temperature {
             options.temperature = temperature
+        }
+        if let sampling {
+            options.sampling = sampling
         }
         return options
     }

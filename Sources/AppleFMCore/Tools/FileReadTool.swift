@@ -6,6 +6,8 @@ struct FileReadTool: Tool {
     let description = "Read the contents of a file at the given path"
     let approval: ToolApproval
 
+    private static let sensitivePaths = [".ssh/", ".gnupg/", ".env", ".netrc", ".aws/", ".kube/config"]
+
     init(approval: ToolApproval = ToolApproval()) {
         self.approval = approval
     }
@@ -19,6 +21,12 @@ struct FileReadTool: Tool {
     func call(arguments: Arguments) async throws -> String {
         guard approval.requestApproval(toolName: name, description: "Read file: \(arguments.path)") else {
             return "Tool execution denied by user."
+        }
+
+        if Self.sensitivePaths.contains(where: { arguments.path.contains($0) }) {
+            FileHandle.standardError.write(
+                Data("[applefm] Warning: reading potentially sensitive path: \(arguments.path)\n".utf8)
+            )
         }
 
         let url = URL(fileURLWithPath: arguments.path)

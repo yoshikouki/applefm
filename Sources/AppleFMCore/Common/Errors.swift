@@ -2,12 +2,14 @@ import Foundation
 import FoundationModels
 
 /// GenerationError をユーザー向けメッセージと終了コードに変換する
-public enum AppError: Error {
+public enum AppError: Error, LocalizedError {
     case modelNotAvailable(String)
     case generationError(any Error)
     case sessionNotFound(String)
     case invalidInput(String)
     case fileError(String)
+
+    public var errorDescription: String? { message }
 
     public var message: String {
         switch self {

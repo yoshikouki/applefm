@@ -8,6 +8,7 @@ struct ModelCommand: AsyncParsableCommand {
             ModelAvailabilityCommand.self,
             ModelLanguagesCommand.self,
             ModelSupportsLocaleCommand.self,
+            ModelPrewarmCommand.self,
         ]
     )
 }

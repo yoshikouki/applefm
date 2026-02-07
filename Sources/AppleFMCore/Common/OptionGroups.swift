@@ -74,17 +74,17 @@ struct ToolOptionGroup: ParsableArguments {
     var tool: [String] = []
 
     @Option(name: .long, help: "Tool approval mode (ask or auto)")
-    var toolApproval: ToolApprovalMode = .ask
+    var toolApproval: ToolApprovalMode?
 
     func resolveTools() throws -> [any Tool] {
-        try ToolRegistry.resolve(names: tool, approval: ToolApproval(mode: toolApproval))
+        try ToolRegistry.resolve(names: tool, approval: ToolApproval(mode: toolApproval ?? .ask))
     }
 
     func withSettings(_ settings: Settings) -> ToolOptionGroup {
         var copy = self
         if copy.tool.isEmpty { copy.tool = settings.tools ?? [] }
-        if let approval = settings.toolApproval.flatMap({ ToolApprovalMode(rawValue: $0) }) {
-            copy.toolApproval = approval
+        if copy.toolApproval == nil {
+            copy.toolApproval = settings.toolApproval.flatMap { ToolApprovalMode(rawValue: $0) }
         }
         return copy
     }

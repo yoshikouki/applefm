@@ -57,7 +57,7 @@ struct SessionRespondCommand: AsyncParsableCommand {
         if !effectiveToolOptions.tool.isEmpty {
             tools = try effectiveToolOptions.resolveTools()
         } else if let savedTools = metadata.tools, !savedTools.isEmpty {
-            tools = try ToolRegistry.resolve(names: savedTools, approval: ToolApproval(mode: effectiveToolOptions.toolApproval))
+            tools = try ToolRegistry.resolve(names: savedTools, approval: ToolApproval(mode: effectiveToolOptions.toolApproval ?? .ask))
         } else {
             tools = []
         }

@@ -20,8 +20,21 @@ struct CommandParsingTests {
         let subcommandNames = AppleFM.configuration.subcommands.map { $0.configuration.commandName ?? "" }
         #expect(subcommandNames.contains("model"))
         #expect(subcommandNames.contains("session"))
+        #expect(subcommandNames.contains("config"))
         #expect(subcommandNames.contains("respond"))
         #expect(subcommandNames.contains("generate"))
+    }
+
+    @Test("config command has expected subcommands")
+    func configSubcommands() {
+        let subcommandNames = ConfigCommand.configuration.subcommands.map { $0.configuration.commandName ?? "" }
+        #expect(subcommandNames.contains("list"))
+        #expect(subcommandNames.contains("get"))
+        #expect(subcommandNames.contains("set"))
+        #expect(subcommandNames.contains("reset"))
+        #expect(subcommandNames.contains("describe"))
+        #expect(subcommandNames.contains("init"))
+        #expect(subcommandNames.contains("preset"))
     }
 
     @Test("version is set to 1.1.0")

@@ -1,3 +1,12 @@
+/// 設定キーのメタデータ
+public struct KeyMetadata: Sendable {
+    public let key: String
+    public let type: String
+    public let description: String
+    public let validValues: [String]?
+    public let range: String?
+}
+
 /// CLI オプションのデフォルト値を保持する設定モデル
 public struct Settings: Codable, Sendable, Equatable {
     public var maxTokens: Int?
@@ -79,11 +88,15 @@ public struct Settings: Codable, Sendable, Equatable {
             maxTokens = v
         case "temperature":
             guard let v = Double(value) else { throw AppError.invalidInput("'\(value)' is not a valid number.") }
+            guard v >= 0.0 && v <= 2.0 else { throw AppError.invalidInput("temperature must be between 0.0 and 2.0.") }
             temperature = v
         case "sampling":
+            let valid = ["greedy"]
+            guard valid.contains(value) else { throw AppError.invalidInput("Invalid value '\(value)' for sampling. Valid values: \(valid.joined(separator: ", "))") }
             sampling = value
         case "samplingThreshold":
             guard let v = Double(value) else { throw AppError.invalidInput("'\(value)' is not a valid number.") }
+            guard v >= 0.0 && v <= 1.0 else { throw AppError.invalidInput("samplingThreshold must be between 0.0 and 1.0.") }
             samplingThreshold = v
         case "samplingTop":
             guard let v = Int(value) else { throw AppError.invalidInput("'\(value)' is not a valid integer.") }
@@ -92,14 +105,25 @@ public struct Settings: Codable, Sendable, Equatable {
             guard let v = UInt64(value) else { throw AppError.invalidInput("'\(value)' is not a valid unsigned integer.") }
             samplingSeed = v
         case "guardrails":
+            let valid = ["default", "permissive"]
+            guard valid.contains(value) else { throw AppError.invalidInput("Invalid value '\(value)' for guardrails. Valid values: \(valid.joined(separator: ", "))") }
             guardrails = value
         case "adapter":
             adapter = value
         case "tools":
-            tools = value.split(separator: ",").map(String.init)
+            let validTools = ["shell", "file-read"]
+            let parsed = value.split(separator: ",").map(String.init)
+            for t in parsed {
+                guard validTools.contains(t) else { throw AppError.invalidInput("Invalid tool '\(t)'. Valid values: \(validTools.joined(separator: ", "))") }
+            }
+            tools = parsed
         case "toolApproval":
+            let valid = ["ask", "auto"]
+            guard valid.contains(value) else { throw AppError.invalidInput("Invalid value '\(value)' for toolApproval. Valid values: \(valid.joined(separator: ", "))") }
             toolApproval = value
         case "format":
+            let valid = ["text", "json"]
+            guard valid.contains(value) else { throw AppError.invalidInput("Invalid value '\(value)' for format. Valid values: \(valid.joined(separator: ", "))") }
             format = value
         case "stream":
             guard let v = Bool(value) else { throw AppError.invalidInput("'\(value)' is not a valid boolean (true/false).") }
@@ -107,6 +131,9 @@ public struct Settings: Codable, Sendable, Equatable {
         case "instructions":
             instructions = value
         default:
+            if let suggestion = Settings.suggestKey(for: key) {
+                throw AppError.invalidInput("Unknown setting key: '\(key)'. Did you mean '\(suggestion)'?")
+            }
             throw AppError.invalidInput("Unknown setting key: '\(key)'. Valid keys: \(Settings.validKeys.sorted().joined(separator: ", "))")
         }
     }
@@ -144,4 +171,71 @@ public struct Settings: Codable, Sendable, Equatable {
         }
         return result
     }
+
+    // MARK: - Key Metadata
+
+    public static let keyMetadata: [String: KeyMetadata] = {
+        let items: [KeyMetadata] = [
+            KeyMetadata(key: "maxTokens", type: "integer", description: "Maximum number of tokens to generate", validValues: nil, range: nil),
+            KeyMetadata(key: "temperature", type: "number", description: "Sampling temperature", validValues: nil, range: "0.0-2.0"),
+            KeyMetadata(key: "sampling", type: "string", description: "Sampling strategy", validValues: ["greedy"], range: nil),
+            KeyMetadata(key: "samplingThreshold", type: "number", description: "Probability threshold for random sampling", validValues: nil, range: "0.0-1.0"),
+            KeyMetadata(key: "samplingTop", type: "integer", description: "Top-k value for random sampling", validValues: nil, range: nil),
+            KeyMetadata(key: "samplingSeed", type: "integer", description: "Random seed for sampling", validValues: nil, range: nil),
+            KeyMetadata(key: "guardrails", type: "string", description: "Content guardrails level", validValues: ["default", "permissive"], range: nil),
+            KeyMetadata(key: "adapter", type: "string", description: "Model adapter identifier", validValues: nil, range: nil),
+            KeyMetadata(key: "tools", type: "list", description: "Comma-separated list of tools to enable", validValues: ["shell", "file-read"], range: nil),
+            KeyMetadata(key: "toolApproval", type: "string", description: "Tool execution approval mode", validValues: ["ask", "auto"], range: nil),
+            KeyMetadata(key: "format", type: "string", description: "Output format", validValues: ["text", "json"], range: nil),
+            KeyMetadata(key: "stream", type: "boolean", description: "Enable streaming output", validValues: ["true", "false"], range: nil),
+            KeyMetadata(key: "instructions", type: "string", description: "System instructions for the model", validValues: nil, range: nil),
+        ]
+        var dict: [String: KeyMetadata] = [:]
+        for item in items { dict[item.key] = item }
+        return dict
+    }()
+
+    /// Levenshtein 距離でキー候補を提示
+    public static func suggestKey(for input: String) -> String? {
+        var best: (key: String, distance: Int)?
+        for key in validKeys {
+            let d = levenshteinDistance(input, key)
+            if d <= 3, best == nil || d < best!.distance {
+                best = (key, d)
+            }
+        }
+        return best?.key
+    }
+
+    private static func levenshteinDistance(_ a: String, _ b: String) -> Int {
+        let a = Array(a), b = Array(b)
+        let m = a.count, n = b.count
+        if m == 0 { return n }
+        if n == 0 { return m }
+        var prev = Array(0...n)
+        var curr = [Int](repeating: 0, count: n + 1)
+        for i in 1...m {
+            curr[0] = i
+            for j in 1...n {
+                let cost = a[i - 1] == b[j - 1] ? 0 : 1
+                curr[j] = min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost)
+            }
+            prev = curr
+        }
+        return prev[n]
+    }
+
+    // MARK: - Presets
+
+    public struct Preset: Sendable {
+        public let name: String
+        public let description: String
+        public let values: [(key: String, value: String)]
+    }
+
+    public static let presets: [Preset] = [
+        Preset(name: "creative", description: "High temperature for creative generation", values: [("temperature", "1.5")]),
+        Preset(name: "precise", description: "Low temperature with greedy sampling", values: [("temperature", "0.2"), ("sampling", "greedy")]),
+        Preset(name: "balanced", description: "Moderate temperature for balanced output", values: [("temperature", "0.7")]),
+    ]
 }

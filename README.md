@@ -10,16 +10,20 @@ A thin CLI wrapper for Apple's Foundation Models framework (macOS 26+). Exposes 
 
 ## Installation
 
+### Homebrew (recommended)
+
+```bash
+brew tap yoshikouki/applefm
+brew install applefm
+```
+
+### Build from source
+
 ```bash
 git clone https://github.com/yoshikouki/applefm.git
 cd applefm
 swift build -c release
-# Binary at .build/release/applefm
-
-# Optional: add to PATH
 cp .build/release/applefm /usr/local/bin/
-# or
-export PATH="$PWD/.build/release:$PATH"
 ```
 
 ## Quick Start

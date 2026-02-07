@@ -67,6 +67,12 @@ applefm
 - **HistoryStore** — Appends `HistoryEntry` (sessionId, ts, text, cwd) to `~/.applefm/history.jsonl`. File permissions `0o600`
 - **SessionLogger** — Writes `SessionLogEntry` to `~/.applefm/sessions/log-<date>-<sessionId>.jsonl`. Tracks user/assistant/error events per session. Tool output is not logged
 
+### Distribution
+
+- Homebrew tap: `yoshikouki/homebrew-applefm`
+- リリースフロー: タグ push → GitHub Actions → GitHub Release 作成 + Homebrew formula 自動更新
+- 必要な Secret: `HOMEBREW_TAP_TOKEN` — `yoshikouki/homebrew-applefm` への書き込み権限を持つ Fine-grained PAT
+
 ### Tool Protocol Pattern
 
 Built-in tools (`ShellTool`, `FileReadTool`) use `@Generable` and `@Guide` macros for compile-time argument schema generation. Dynamic runtime tool creation is not possible with the Tool protocol — all tools must be compiled into the binary.

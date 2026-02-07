@@ -32,6 +32,18 @@ struct GenerationOptionGroup: ParsableArguments {
         )
         return ModelFactory.makeGenerationOptions(maxTokens: maxTokens, temperature: temperature, sampling: samplingMode)
     }
+
+    /// Settings の値で未指定フィールドを埋めたコピーを返す
+    func withSettings(_ settings: Settings) -> GenerationOptionGroup {
+        var copy = self
+        if copy.maxTokens == nil { copy.maxTokens = settings.maxTokens }
+        if copy.temperature == nil { copy.temperature = settings.temperature }
+        if copy.sampling == nil { copy.sampling = settings.sampling.flatMap { SamplingModeOption(rawValue: $0) } }
+        if copy.samplingThreshold == nil { copy.samplingThreshold = settings.samplingThreshold }
+        if copy.samplingTop == nil { copy.samplingTop = settings.samplingTop }
+        if copy.samplingSeed == nil { copy.samplingSeed = settings.samplingSeed }
+        return copy
+    }
 }
 
 // MARK: - Model Options
@@ -46,6 +58,13 @@ struct ModelOptionGroup: ParsableArguments {
     func createModel(fallbackGuardrails: GuardrailsOption = .default) throws -> SystemLanguageModel {
         try ModelFactory.createModel(guardrails: guardrails ?? fallbackGuardrails, adapterPath: adapter)
     }
+
+    func withSettings(_ settings: Settings) -> ModelOptionGroup {
+        var copy = self
+        if copy.guardrails == nil { copy.guardrails = settings.guardrails.flatMap { GuardrailsOption(rawValue: $0) } }
+        if copy.adapter == nil { copy.adapter = settings.adapter }
+        return copy
+    }
 }
 
 // MARK: - Tool Options
@@ -59,5 +78,14 @@ struct ToolOptionGroup: ParsableArguments {
 
     func resolveTools() throws -> [any Tool] {
         try ToolRegistry.resolve(names: tool, approval: ToolApproval(mode: toolApproval))
+    }
+
+    func withSettings(_ settings: Settings) -> ToolOptionGroup {
+        var copy = self
+        if copy.tool.isEmpty { copy.tool = settings.tools ?? [] }
+        if let approval = settings.toolApproval.flatMap({ ToolApprovalMode(rawValue: $0) }) {
+            copy.toolApproval = approval
+        }
+        return copy
     }
 }

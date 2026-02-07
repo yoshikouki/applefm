@@ -17,35 +17,41 @@ struct SessionNewCommand: AsyncParsableCommand {
     @OptionGroup var toolOptions: ToolOptionGroup
 
     @Option(name: .long, help: "Output format (text or json)")
-    var format: OutputFormat = .text
+    var format: OutputFormat?
 
     func run() async throws {
+        let settings = SettingsStore().load()
+
+        let effectiveFormat = format ?? settings.format.flatMap { OutputFormat(rawValue: $0) } ?? .text
+
         let store = SessionStore()
 
         if store.sessionExists(name: name) {
             throw AppError.invalidInput("Session '\(name)' already exists.")
         }
 
-        let model = try modelOptions.createModel()
-        let tools = try toolOptions.resolveTools()
+        let model = try modelOptions.withSettings(settings).createModel()
+        let effectiveToolOptions = toolOptions.withSettings(settings)
+        let tools = try effectiveToolOptions.resolveTools()
+        let effectiveInstructions = instructions ?? settings.instructions
         let session: LanguageModelSession
-        if let instructions {
-            session = LanguageModelSession(model: model, tools: tools, instructions: instructions)
+        if let effectiveInstructions {
+            session = LanguageModelSession(model: model, tools: tools, instructions: effectiveInstructions)
         } else {
             session = LanguageModelSession(model: model, tools: tools)
         }
 
         let metadata = SessionMetadata(
             name: name,
-            instructions: instructions,
-            guardrails: modelOptions.guardrails?.rawValue,
-            adapterPath: modelOptions.adapter,
-            tools: toolOptions.tool.isEmpty ? nil : toolOptions.tool
+            instructions: effectiveInstructions,
+            guardrails: modelOptions.guardrails?.rawValue ?? settings.guardrails,
+            adapterPath: modelOptions.adapter ?? settings.adapter,
+            tools: effectiveToolOptions.tool.isEmpty ? nil : effectiveToolOptions.tool
         )
         try store.saveMetadata(metadata)
         try store.saveTranscript(session.transcript, name: name)
 
-        let formatter = OutputFormatter(format: format)
+        let formatter = OutputFormatter(format: effectiveFormat)
         print(formatter.output([
             "session": name,
             "status": "created",

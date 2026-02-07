@@ -20,38 +20,49 @@ struct RespondCommand: AsyncParsableCommand {
     @OptionGroup var modelOptions: ModelOptionGroup
     @OptionGroup var toolOptions: ToolOptionGroup
 
-    @Flag(name: .long, help: "Stream response incrementally")
-    var stream: Bool = false
+    @Flag(inversion: .prefixedNo, help: "Stream response incrementally")
+    var stream: Bool?
 
     @Option(name: .long, help: "Output format (text or json)")
-    var format: OutputFormat = .text
+    var format: OutputFormat?
 
     func validate() throws {
-        if stream && format == .json {
+        if stream == true && format == .json {
             throw ValidationError("--stream and --format json cannot be used together.")
         }
     }
 
     func run() async throws {
-        let model = try modelOptions.createModel()
-        let tools = try toolOptions.resolveTools()
+        let settings = SettingsStore().load()
+
+        let effectiveStream = stream ?? settings.stream ?? false
+        let effectiveFormat = format ?? settings.format.flatMap { OutputFormat(rawValue: $0) } ?? .text
+
+        if effectiveStream && effectiveFormat == .json {
+            throw ValidationError("--stream and --format json cannot be used together.")
+        }
+
+        let genOpts = generationOptions.withSettings(settings)
+        let model = try modelOptions.withSettings(settings).createModel()
+        let tools = try toolOptions.withSettings(settings).resolveTools()
+        let effectiveInstructions = instructions ?? settings.instructions
         let session: LanguageModelSession
-        if let instructions {
-            session = LanguageModelSession(model: model, tools: tools, instructions: instructions)
+        if let effectiveInstructions {
+            session = LanguageModelSession(model: model, tools: tools, instructions: effectiveInstructions)
         } else {
             session = LanguageModelSession(model: model, tools: tools)
         }
 
         let promptText = try PromptInput.resolve(argument: prompt, filePath: file)
-        let options = generationOptions.makeOptions()
+        let options = genOpts.makeOptions()
 
         do {
-            if stream {
+            if effectiveStream {
                 let responseStream = session.streamResponse(to: promptText, options: options)
                 try await ResponseStreamer.stream(responseStream)
             } else {
                 let response = try await session.respond(to: promptText, options: options)
-                let formatter = OutputFormatter(format: format)
+                let formatter = OutputFormatter(format: effectiveFormat)
                 print(formatter.output(response.content))
             }
         } catch {

@@ -20,19 +20,28 @@ struct SessionRespondCommand: AsyncParsableCommand {
     @OptionGroup var modelOptions: ModelOptionGroup
     @OptionGroup var toolOptions: ToolOptionGroup
 
-    @Flag(name: .long, help: "Stream response incrementally")
-    var stream: Bool = false
+    @Flag(inversion: .prefixedNo, help: "Stream response incrementally")
+    var stream: Bool?
 
     @Option(name: .long, help: "Output format (text or json)")
-    var format: OutputFormat = .text
+    var format: OutputFormat?
 
     func validate() throws {
-        if stream && format == .json {
+        if stream == true && format == .json {
             throw ValidationError("--stream and --format json cannot be used together.")
         }
     }
 
     func run() async throws {
+        let settings = SettingsStore().load()
+
+        let effectiveStream = stream ?? settings.stream ?? false
+        let effectiveFormat = format ?? settings.format.flatMap { OutputFormat(rawValue: $0) } ?? .text
+
+        if effectiveStream && effectiveFormat == .json {
+            throw ValidationError("--stream and --format json cannot be used together.")
+        }
+
         let store = SessionStore()
 
         let metadata = try store.loadMetadata(name: name)
@@ -40,13 +49,14 @@ struct SessionRespondCommand: AsyncParsableCommand {
 
         // Use metadata values as fallbacks for model/tool options
         let guardrailsFallback = metadata.guardrails.flatMap { GuardrailsOption(rawValue: $0) } ?? .default
-        let model = try modelOptions.createModel(fallbackGuardrails: guardrailsFallback)
+        let model = try modelOptions.withSettings(settings).createModel(fallbackGuardrails: guardrailsFallback)
 
+        let effectiveToolOptions = toolOptions.withSettings(settings)
         let tools: [any Tool]
-        if !toolOptions.tool.isEmpty {
-            tools = try toolOptions.resolveTools()
+        if !effectiveToolOptions.tool.isEmpty {
+            tools = try effectiveToolOptions.resolveTools()
         } else if let savedTools = metadata.tools, !savedTools.isEmpty {
-            tools = try ToolRegistry.resolve(names: savedTools, approval: ToolApproval(mode: toolOptions.toolApproval))
+            tools = try ToolRegistry.resolve(names: savedTools, approval: ToolApproval(mode: effectiveToolOptions.toolApproval))
         } else {
             tools = []
         }
@@ -59,18 +69,18 @@ struct SessionRespondCommand: AsyncParsableCommand {
         }
 
         let promptText = try PromptInput.resolve(argument: prompt, filePath: file)
-        let options = generationOptions.makeOptions()
+        let options = generationOptions.withSettings(settings).makeOptions()
 
         // Save transcript even if generation fails (preserves partial conversation)
         defer { try? store.saveTranscript(session.transcript, name: name) }
 
         do {
-            if stream {
+            if effectiveStream {
                 let responseStream = session.streamResponse(to: promptText, options: options)
                 try await ResponseStreamer.stream(responseStream)
             } else {
                 let response = try await session.respond(to: promptText, options: options)
-                let formatter = OutputFormatter(format: format)
+                let formatter = OutputFormatter(format: effectiveFormat)
                 print(formatter.output(response.content))
             }
         } catch {

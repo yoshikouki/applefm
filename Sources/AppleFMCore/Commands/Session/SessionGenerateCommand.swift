@@ -24,16 +24,20 @@ struct SessionGenerateCommand: AsyncParsableCommand {
     @OptionGroup var modelOptions: ModelOptionGroup
 
     @Option(name: .long, help: "Output format (text or json)")
-    var format: OutputFormat = .json
+    var format: OutputFormat?
 
     func run() async throws {
+        let settings = SettingsStore().load()
+
+        let effectiveFormat = format ?? settings.format.flatMap { OutputFormat(rawValue: $0) } ?? .json
+
         let store = SessionStore()
 
         let metadata = try store.loadMetadata(name: name)
         let transcript = try store.loadTranscript(name: name)
 
         let guardrailsFallback = metadata.guardrails.flatMap { GuardrailsOption(rawValue: $0) } ?? .default
-        let model = try modelOptions.createModel(fallbackGuardrails: guardrailsFallback)
+        let model = try modelOptions.withSettings(settings).createModel(fallbackGuardrails: guardrailsFallback)
 
         let session: LanguageModelSession
         if transcript.isEmpty, let instructions = metadata.instructions {
@@ -44,7 +48,7 @@ struct SessionGenerateCommand: AsyncParsableCommand {
 
         let promptText = try PromptInput.resolve(argument: prompt, filePath: file)
         let generationSchema = try SchemaLoader.load(from: schema)
-        let options = generationOptions.makeOptions()
+        let options = generationOptions.withSettings(settings).makeOptions()
 
         // Save transcript even if generation fails (preserves partial conversation)
         defer { try? store.saveTranscript(session.transcript, name: name) }
@@ -56,7 +60,7 @@ struct SessionGenerateCommand: AsyncParsableCommand {
                 options: options
             )
 
-            let formatter = OutputFormatter(format: format)
+            let formatter = OutputFormatter(format: effectiveFormat)
             print(formatter.output(String(describing: response.content)))
         } catch {
             throw AppError.generationError(error)

@@ -24,20 +24,25 @@ struct GenerateCommand: AsyncParsableCommand {
     @OptionGroup var modelOptions: ModelOptionGroup
 
     @Option(name: .long, help: "Output format (text or json)")
-    var format: OutputFormat = .json
+    var format: OutputFormat?
 
     func run() async throws {
-        let model = try modelOptions.createModel()
+        let settings = SettingsStore().load()
+
+        let effectiveFormat = format ?? settings.format.flatMap { OutputFormat(rawValue: $0) } ?? .json
+
+        let model = try modelOptions.withSettings(settings).createModel()
+        let effectiveInstructions = instructions ?? settings.instructions
         let session: LanguageModelSession
-        if let instructions {
-            session = LanguageModelSession(model: model, instructions: instructions)
+        if let effectiveInstructions {
+            session = LanguageModelSession(model: model, instructions: effectiveInstructions)
         } else {
             session = LanguageModelSession(model: model)
         }
 
         let promptText = try PromptInput.resolve(argument: prompt, filePath: file)
         let generationSchema = try SchemaLoader.load(from: schema)
-        let options = generationOptions.makeOptions()
+        let options = generationOptions.withSettings(settings).makeOptions()
 
         do {
             let response = try await session.respond(
@@ -45,7 +50,7 @@ struct GenerateCommand: AsyncParsableCommand {
                 schema: generationSchema,
                 options: options
             )
-            let formatter = OutputFormatter(format: format)
+            let formatter = OutputFormatter(format: effectiveFormat)
             print(formatter.output(String(describing: response.content)))
         } catch {
             throw AppError.generationError(error)

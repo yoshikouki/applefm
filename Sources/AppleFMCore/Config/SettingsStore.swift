@@ -44,7 +44,7 @@ public struct SettingsStore: Sendable {
     private func ensureDirectoryExists() throws {
         let fm = FileManager.default
         if !fm.fileExists(atPath: baseDirectory.path) {
-            try fm.createDirectory(at: baseDirectory, withIntermediateDirectories: true)
+            try fm.createDirectory(at: baseDirectory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         }
     }
 }

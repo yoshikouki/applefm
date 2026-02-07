@@ -95,7 +95,7 @@ Tools allow the model to interact with the system during generation.
 applefm respond "List Swift files in current dir" --tool shell
 
 # File reading
-applefm respond "Summarize README.md" --tool file-read
+applefm respond "Summarize README.md in current project" --tool file-read
 
 # Multiple tools
 applefm respond "Read and analyze main.swift" --tool shell --tool file-read

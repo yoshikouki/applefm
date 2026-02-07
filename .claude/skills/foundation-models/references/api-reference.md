@@ -260,18 +260,31 @@ struct PromptBuilder {
 struct GenerationOptions
 ```
 
+### Initializer
+
+```swift
+init(
+    sampling: GenerationOptions.SamplingMode? = nil,
+    temperature: Double? = nil,
+    maximumResponseTokens: Int? = nil
+)
+```
+
 ### Properties
 
 | Property | Type | Description |
 |---|---|---|
 | `maximumResponseTokens` | `Int?` | レスポンスの最大トークン数 |
-| `sampling` | `Sampling?` | サンプリング設定 (temperature 等) |
+| `temperature` | `Double?` | 温度パラメータ (0.0-1.0)。高いと多様性が増す |
+| `sampling` | `SamplingMode?` | サンプリング戦略 |
 
-### Sampling
+### SamplingMode
 
 ```swift
-struct Sampling {
-    var temperature: Double?
+struct GenerationOptions.SamplingMode {
+    static var greedy: SamplingMode  // 最も確率の高いトークンを常に選択
+    static func random(probabilityThreshold: Double, seed: UInt64?) -> SamplingMode
+    static func random(top: Int, seed: UInt64?) -> SamplingMode
 }
 ```
 

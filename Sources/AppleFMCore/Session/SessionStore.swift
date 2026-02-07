@@ -15,9 +15,23 @@ public struct SessionStore: Sendable {
         }
     }
 
+    // MARK: - Validation
+
+    /// セッション名を検証する（英数字・ハイフン・アンダースコアのみ、1-100文字）
+    public static func validateSessionName(_ name: String) throws {
+        guard !name.isEmpty, name.count <= 100 else {
+            throw AppError.invalidInput("Session name must be 1-100 characters.")
+        }
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
+        guard name.unicodeScalars.allSatisfy({ allowed.contains($0) }) else {
+            throw AppError.invalidInput("Session name may only contain alphanumeric characters, hyphens, and underscores.")
+        }
+    }
+
     // MARK: - Metadata
 
     public func saveMetadata(_ metadata: SessionMetadata) throws {
+        try Self.validateSessionName(metadata.name)
         try ensureDirectoryExists()
         let url = metadataURL(for: metadata.name)
         let encoder = JSONEncoder()
@@ -28,6 +42,7 @@ public struct SessionStore: Sendable {
     }
 
     public func loadMetadata(name: String) throws -> SessionMetadata {
+        try Self.validateSessionName(name)
         let url = metadataURL(for: name)
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw AppError.sessionNotFound(name)
@@ -41,6 +56,7 @@ public struct SessionStore: Sendable {
     // MARK: - Transcript
 
     public func saveTranscript(_ transcript: Transcript, name: String) throws {
+        try Self.validateSessionName(name)
         try ensureDirectoryExists()
         let url = transcriptURL(for: name)
         let encoder = JSONEncoder()
@@ -50,6 +66,7 @@ public struct SessionStore: Sendable {
     }
 
     public func loadTranscript(name: String) throws -> Transcript {
+        try Self.validateSessionName(name)
         let url = transcriptURL(for: name)
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw AppError.sessionNotFound(name)
@@ -77,6 +94,7 @@ public struct SessionStore: Sendable {
     }
 
     public func deleteSession(name: String) throws {
+        try Self.validateSessionName(name)
         let meta = metadataURL(for: name)
         let transcript = transcriptURL(for: name)
         let fm = FileManager.default
@@ -89,7 +107,10 @@ public struct SessionStore: Sendable {
     }
 
     public func sessionExists(name: String) -> Bool {
-        FileManager.default.fileExists(atPath: metadataURL(for: name).path)
+        guard (try? Self.validateSessionName(name)) != nil else {
+            return false
+        }
+        return FileManager.default.fileExists(atPath: metadataURL(for: name).path)
     }
 
     // MARK: - Private

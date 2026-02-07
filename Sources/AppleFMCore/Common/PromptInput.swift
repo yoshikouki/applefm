@@ -3,6 +3,9 @@ import Foundation
 /// プロンプト入力の解決（引数 > ファイル > stdin）
 public struct PromptInput: Sendable {
 
+    /// Maximum input size: 10 MB
+    static let maxInputBytes = 10 * 1024 * 1024
+
     /// プロンプトテキストを解決する
     /// - Parameters:
     ///   - argument: コマンドライン引数で渡されたテキスト
@@ -30,7 +33,16 @@ public struct PromptInput: Sendable {
     static func readFile(at path: String) throws -> String {
         let url = URL(fileURLWithPath: (path as NSString).expandingTildeInPath)
         do {
-            return try String(contentsOf: url, encoding: .utf8)
+            let data = try Data(contentsOf: url)
+            guard data.count <= maxInputBytes else {
+                throw AppError.invalidInput("Input file exceeds \(maxInputBytes / 1024 / 1024)MB limit.")
+            }
+            guard let text = String(data: data, encoding: .utf8) else {
+                throw AppError.fileError("Cannot decode file as UTF-8: \(path)")
+            }
+            return text
+        } catch let error as AppError {
+            throw error
         } catch {
             throw AppError.fileError("Cannot read file: \(path) (\(error.localizedDescription))")
         }
@@ -41,7 +53,12 @@ public struct PromptInput: Sendable {
             return nil
         }
         var lines: [String] = []
+        var totalBytes = 0
         while let line = readLine(strippingNewline: false) {
+            totalBytes += line.utf8.count
+            if totalBytes > maxInputBytes {
+                return nil
+            }
             lines.append(line)
         }
         let result = lines.joined()

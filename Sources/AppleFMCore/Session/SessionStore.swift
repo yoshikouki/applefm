@@ -38,7 +38,7 @@ public struct SessionStore: Sendable {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         let data = try encoder.encode(metadata)
-        try data.write(to: url)
+        try data.write(to: url, options: .atomic)
     }
 
     public func loadMetadata(name: String) throws -> SessionMetadata {
@@ -62,7 +62,7 @@ public struct SessionStore: Sendable {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted]
         let data = try encoder.encode(transcript)
-        try data.write(to: url)
+        try data.write(to: url, options: .atomic)
     }
 
     public func loadTranscript(name: String) throws -> Transcript {

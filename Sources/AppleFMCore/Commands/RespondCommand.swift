@@ -1,4 +1,5 @@
 import ArgumentParser
+import Foundation
 import FoundationModels
 
 struct RespondCommand: AsyncParsableCommand {
@@ -55,6 +56,10 @@ struct RespondCommand: AsyncParsableCommand {
 
         let promptText = try PromptInput.resolve(argument: prompt, filePath: file)
         let options = genOpts.makeOptions()
+
+        if settings.isLogEnabled {
+            try? HistoryStore().append(HistoryEntry(sessionId: UUID().uuidString, text: promptText))
+        }
 
         do {
             if effectiveStream {

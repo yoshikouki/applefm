@@ -1,3 +1,5 @@
+import Foundation
+
 /// 設定キーのメタデータ
 public struct KeyMetadata: Sendable {
     public let key: String
@@ -22,6 +24,7 @@ public struct Settings: Codable, Sendable, Equatable {
     public var format: String?
     public var stream: Bool?
     public var instructions: String?
+    public var logEnabled: Bool?
 
     public init(
         maxTokens: Int? = nil,
@@ -36,7 +39,8 @@ public struct Settings: Codable, Sendable, Equatable {
         toolApproval: String? = nil,
         format: String? = nil,
         stream: Bool? = nil,
-        instructions: String? = nil
+        instructions: String? = nil,
+        logEnabled: Bool? = nil
     ) {
         self.maxTokens = maxTokens
         self.temperature = temperature
@@ -51,13 +55,14 @@ public struct Settings: Codable, Sendable, Equatable {
         self.format = format
         self.stream = stream
         self.instructions = instructions
+        self.logEnabled = logEnabled
     }
 
     /// 有効な設定キー一覧
     public static let validKeys: Set<String> = [
         "maxTokens", "temperature", "sampling", "samplingThreshold",
         "samplingTop", "samplingSeed", "guardrails", "adapter",
-        "tools", "toolApproval", "format", "stream", "instructions",
+        "tools", "toolApproval", "format", "stream", "instructions", "logEnabled",
     ]
 
     /// キー名で値を取得
@@ -76,6 +81,7 @@ public struct Settings: Codable, Sendable, Equatable {
         case "format": return format
         case "stream": return stream.map { "\($0)" }
         case "instructions": return instructions
+        case "logEnabled": return logEnabled.map { "\($0)" }
         default: return nil
         }
     }
@@ -130,6 +136,9 @@ public struct Settings: Codable, Sendable, Equatable {
             stream = v
         case "instructions":
             instructions = value
+        case "logEnabled":
+            guard let v = Bool(value) else { throw AppError.invalidInput("'\(value)' is not a valid boolean (true/false).") }
+            logEnabled = v
         default:
             if let suggestion = Settings.suggestKey(for: key) {
                 throw AppError.invalidInput("Unknown setting key: '\(key)'. Did you mean '\(suggestion)'?")
@@ -157,6 +166,7 @@ public struct Settings: Codable, Sendable, Equatable {
         case "format": format = nil
         case "stream": stream = nil
         case "instructions": instructions = nil
+        case "logEnabled": logEnabled = nil
         default: break
         }
     }
@@ -189,6 +199,7 @@ public struct Settings: Codable, Sendable, Equatable {
             KeyMetadata(key: "format", type: "string", description: "Output format", validValues: ["text", "json"], range: nil),
             KeyMetadata(key: "stream", type: "boolean", description: "Enable streaming output", validValues: ["true", "false"], range: nil),
             KeyMetadata(key: "instructions", type: "string", description: "System instructions for the model", validValues: nil, range: nil),
+            KeyMetadata(key: "logEnabled", type: "boolean", description: "Enable command history and session logging", validValues: ["true", "false"], range: nil),
         ]
         var dict: [String: KeyMetadata] = [:]
         for item in items { dict[item.key] = item }
@@ -223,6 +234,12 @@ public struct Settings: Codable, Sendable, Equatable {
             prev = curr
         }
         return prev[n]
+    }
+
+    /// ログが有効かどうか（デフォルト true、環境変数 APPLEFM_NO_LOG でも無効化可能）
+    public var isLogEnabled: Bool {
+        if ProcessInfo.processInfo.environment["APPLEFM_NO_LOG"] != nil { return false }
+        return logEnabled ?? true
     }
 
     // MARK: - Presets

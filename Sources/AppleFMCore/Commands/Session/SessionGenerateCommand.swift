@@ -50,6 +50,11 @@ struct SessionGenerateCommand: AsyncParsableCommand {
         let generationSchema = try SchemaLoader.load(from: schema)
         let options = generationOptions.withSettings(settings).makeOptions()
 
+        if settings.isLogEnabled {
+            try? HistoryStore().append(HistoryEntry(sessionId: name, text: promptText))
+            try? SessionLogger().log(SessionLogEntry(type: "user", text: promptText), sessionId: name)
+        }
+
         // Save transcript even if generation fails (preserves partial conversation)
         defer { try? store.saveTranscript(session.transcript, name: name) }
 
@@ -61,8 +66,15 @@ struct SessionGenerateCommand: AsyncParsableCommand {
             )
 
             let formatter = OutputFormatter(format: effectiveFormat)
-            print(formatter.output(String(describing: response.content)))
+            let output = String(describing: response.content)
+            print(formatter.output(output))
+            if settings.isLogEnabled {
+                try? SessionLogger().log(SessionLogEntry(type: "assistant", text: output), sessionId: name)
+            }
         } catch {
+            if settings.isLogEnabled {
+                try? SessionLogger().log(SessionLogEntry(type: "error", message: "\(error)"), sessionId: name)
+            }
             throw AppError.generationError(error)
         }
     }

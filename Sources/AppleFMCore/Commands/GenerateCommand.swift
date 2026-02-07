@@ -44,6 +44,10 @@ struct GenerateCommand: AsyncParsableCommand {
         let generationSchema = try SchemaLoader.load(from: schema)
         let options = generationOptions.withSettings(settings).makeOptions()
 
+        if settings.isLogEnabled {
+            try? HistoryStore().append(HistoryEntry(sessionId: UUID().uuidString, text: promptText))
+        }
+
         do {
             let response = try await session.respond(
                 to: promptText,

@@ -1,4 +1,5 @@
 import ArgumentParser
+import Foundation
 import FoundationModels
 
 struct SessionRespondCommand: AsyncParsableCommand {
@@ -71,6 +72,11 @@ struct SessionRespondCommand: AsyncParsableCommand {
         let promptText = try PromptInput.resolve(argument: prompt, filePath: file)
         let options = generationOptions.withSettings(settings).makeOptions()
 
+        if settings.isLogEnabled {
+            try? HistoryStore().append(HistoryEntry(sessionId: name, text: promptText))
+            try? SessionLogger().log(SessionLogEntry(type: "user", text: promptText), sessionId: name)
+        }
+
         // Save transcript even if generation fails (preserves partial conversation)
         defer { try? store.saveTranscript(session.transcript, name: name) }
 
@@ -82,8 +88,14 @@ struct SessionRespondCommand: AsyncParsableCommand {
                 let response = try await session.respond(to: promptText, options: options)
                 let formatter = OutputFormatter(format: effectiveFormat)
                 print(formatter.output(response.content))
+                if settings.isLogEnabled {
+                    try? SessionLogger().log(SessionLogEntry(type: "assistant", text: response.content), sessionId: name)
+                }
             }
         } catch {
+            if settings.isLogEnabled {
+                try? SessionLogger().log(SessionLogEntry(type: "error", message: "\(error)"), sessionId: name)
+            }
             throw AppError.generationError(error)
         }
     }

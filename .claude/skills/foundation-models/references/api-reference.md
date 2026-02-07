@@ -223,4 +223,202 @@ case toolOutput(Transcript.ToolOutput)
 case response(Transcript.Response)
 ```
 
-SwiftUI の `List` で表示可能。
+SwiftUI の `List` で表示可能。`Codable` に準拠しており JSON シリアライズで永続化可能。
+
+---
+
+## Prompt
+
+プロンプトを構築するための型。
+
+```swift
+struct Prompt
+```
+
+- `String` から暗黙変換可能（`ExpressibleByStringLiteral`）
+- `@PromptBuilder` で構築可能
+
+### PromptBuilder
+
+```swift
+@resultBuilder
+struct PromptBuilder {
+    static func buildBlock(_ components: PromptRepresentable...) -> Prompt
+    static func buildOptional(_ component: PromptRepresentable?) -> Prompt
+    static func buildEither(first: PromptRepresentable) -> Prompt
+    static func buildEither(second: PromptRepresentable) -> Prompt
+}
+```
+
+---
+
+## GenerationOptions
+
+生成パラメータの制御。
+
+```swift
+struct GenerationOptions
+```
+
+### Properties
+
+| Property | Type | Description |
+|---|---|---|
+| `maximumResponseTokens` | `Int?` | レスポンスの最大トークン数 |
+| `sampling` | `Sampling?` | サンプリング設定 (temperature 等) |
+
+### Sampling
+
+```swift
+struct Sampling {
+    var temperature: Double?
+}
+```
+
+---
+
+## GeneratedContent
+
+Dynamic Schema 使用時のレスポンス型。
+
+```swift
+struct GeneratedContent
+```
+
+### Methods
+
+```swift
+// プロパティ名で値を取得
+func value<T>(_: T.Type, forProperty property: String) throws -> T
+```
+
+---
+
+## Availability 詳細
+
+### UnavailableReason
+
+```swift
+enum UnavailableReason {
+    case deviceNotEligible      // デバイスが対応していない
+    case modelNotReady          // モデルがまだダウンロード/準備されていない
+    case appleIntelligenceNotEnabled  // Apple Intelligence が無効
+}
+```
+
+---
+
+## GenerationError 詳細
+
+```swift
+enum GenerationError {
+    case exceededContextWindowSize(Context)
+    case guardrailViolation(Context)
+    case rateLimited(Context)             // レート制限に到達
+    case refusal(Refusal, Context)
+    case unsupportedLanguageOrLocale(Context)
+}
+```
+
+`Refusal` は `explanationStream` プロパティで拒否理由をストリームとして取得可能。
+
+---
+
+## respond() / streamResponse() 全オーバーロード一覧
+
+### respond() — 同期（await）
+
+```swift
+// 1. String レスポンス
+func respond(
+    to prompt: String,
+    options: GenerationOptions? = nil
+) async throws -> LanguageModelSession.Response<String>
+
+// 2. Prompt レスポンス
+func respond(
+    to prompt: Prompt,
+    options: GenerationOptions? = nil
+) async throws -> LanguageModelSession.Response<String>
+
+// 3. Guided Generation (型指定)
+func respond<T: Generable>(
+    to prompt: String,
+    generating: T.Type,
+    includeSchemaInPrompt: Bool = true,
+    options: GenerationOptions? = nil
+) async throws -> LanguageModelSession.Response<T>
+
+// 4. Guided Generation (Prompt)
+func respond<T: Generable>(
+    to prompt: Prompt,
+    generating: T.Type,
+    includeSchemaInPrompt: Bool = true,
+    options: GenerationOptions? = nil
+) async throws -> LanguageModelSession.Response<T>
+
+// 5. Dynamic Schema
+func respond(
+    to prompt: String,
+    schema: GenerationSchema,
+    options: GenerationOptions? = nil
+) async throws -> LanguageModelSession.Response<GeneratedContent>
+
+// 6. Dynamic Schema (Prompt)
+func respond(
+    to prompt: Prompt,
+    schema: GenerationSchema,
+    options: GenerationOptions? = nil
+) async throws -> LanguageModelSession.Response<GeneratedContent>
+
+// 7. Instructions のみ（promptなし）
+func respond(
+    options: GenerationOptions? = nil
+) async throws -> LanguageModelSession.Response<String>
+```
+
+### streamResponse() — ストリーミング
+
+```swift
+// 1. String ストリーミング
+func streamResponse(
+    to prompt: String,
+    options: GenerationOptions? = nil
+) -> ResponseStream<String>
+
+// 2. Prompt ストリーミング
+func streamResponse(
+    to prompt: Prompt,
+    options: GenerationOptions? = nil
+) -> ResponseStream<String>
+
+// 3. Guided Generation ストリーミング
+func streamResponse<T: Generable>(
+    to prompt: String,
+    generating: T.Type,
+    includeSchemaInPrompt: Bool = true,
+    options: GenerationOptions? = nil
+) -> ResponseStream<T>
+
+// 4. Guided Generation ストリーミング (Prompt)
+func streamResponse<T: Generable>(
+    to prompt: Prompt,
+    generating: T.Type,
+    includeSchemaInPrompt: Bool = true,
+    options: GenerationOptions? = nil
+) -> ResponseStream<T>
+
+// 5. Dynamic Schema ストリーミング
+func streamResponse(
+    to prompt: String,
+    schema: GenerationSchema,
+    options: GenerationOptions? = nil
+) -> ResponseStream<GeneratedContent>
+
+// 6. Dynamic Schema ストリーミング (Prompt)
+func streamResponse(
+    to prompt: Prompt,
+    schema: GenerationSchema,
+    options: GenerationOptions? = nil
+) -> ResponseStream<GeneratedContent>
+```

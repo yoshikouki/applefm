@@ -181,4 +181,118 @@ struct SettingsTests {
             #expect(Settings.validKeys.contains(key))
         }
     }
+
+    // MARK: - Validation Tests
+
+    @Test("setValue rejects invalid guardrails value")
+    func setValueInvalidGuardrails() {
+        var settings = Settings()
+        #expect(throws: AppError.self) {
+            try settings.setValue("foo", forKey: "guardrails")
+        }
+    }
+
+    @Test("setValue accepts valid guardrails values")
+    func setValueValidGuardrails() throws {
+        var settings = Settings()
+        try settings.setValue("default", forKey: "guardrails")
+        #expect(settings.guardrails == "default")
+        try settings.setValue("permissive", forKey: "guardrails")
+        #expect(settings.guardrails == "permissive")
+    }
+
+    @Test("setValue rejects invalid format value")
+    func setValueInvalidFormat() {
+        var settings = Settings()
+        #expect(throws: AppError.self) {
+            try settings.setValue("xml", forKey: "format")
+        }
+    }
+
+    @Test("setValue rejects invalid toolApproval value")
+    func setValueInvalidToolApproval() {
+        var settings = Settings()
+        #expect(throws: AppError.self) {
+            try settings.setValue("never", forKey: "toolApproval")
+        }
+    }
+
+    @Test("setValue rejects invalid sampling value")
+    func setValueInvalidSampling() {
+        var settings = Settings()
+        #expect(throws: AppError.self) {
+            try settings.setValue("random", forKey: "sampling")
+        }
+    }
+
+    @Test("setValue rejects temperature out of range")
+    func setValueTemperatureRange() {
+        var settings = Settings()
+        #expect(throws: AppError.self) {
+            try settings.setValue("5.0", forKey: "temperature")
+        }
+        #expect(throws: AppError.self) {
+            try settings.setValue("-1.0", forKey: "temperature")
+        }
+    }
+
+    @Test("setValue rejects samplingThreshold out of range")
+    func setValueSamplingThresholdRange() {
+        var settings = Settings()
+        #expect(throws: AppError.self) {
+            try settings.setValue("1.5", forKey: "samplingThreshold")
+        }
+    }
+
+    @Test("setValue rejects invalid tool name")
+    func setValueInvalidTool() {
+        var settings = Settings()
+        #expect(throws: AppError.self) {
+            try settings.setValue("shell,invalid", forKey: "tools")
+        }
+    }
+
+    @Test("suggestKey returns close match")
+    func suggestKeyMatch() {
+        #expect(Settings.suggestKey(for: "temprature") == "temperature")
+        #expect(Settings.suggestKey(for: "maxToken") == "maxTokens")
+    }
+
+    @Test("suggestKey returns nil for distant input")
+    func suggestKeyNoMatch() {
+        #expect(Settings.suggestKey(for: "zzzzzzz") == nil)
+    }
+
+    @Test("Did you mean in error message for unknown key typo")
+    func didYouMeanInError() {
+        var settings = Settings()
+        do {
+            try settings.setValue("0.7", forKey: "temprature")
+            #expect(Bool(false), "Should have thrown")
+        } catch let error as AppError {
+            let message = "\(error)"
+            #expect(message.contains("Did you mean"))
+        } catch {
+            #expect(Bool(false), "Wrong error type")
+        }
+    }
+
+    // MARK: - KeyMetadata Tests
+
+    @Test("all valid keys have metadata")
+    func allKeysHaveMetadata() {
+        for key in Settings.validKeys {
+            #expect(Settings.keyMetadata[key] != nil, "Missing metadata for key: \(key)")
+        }
+    }
+
+    // MARK: - Preset Tests
+
+    @Test("presets contain expected names")
+    func presetsExist() {
+        let names = Settings.presets.map(\.name)
+        #expect(names.contains("creative"))
+        #expect(names.contains("precise"))
+        #expect(names.contains("balanced"))
+    }
 }

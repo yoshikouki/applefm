@@ -69,9 +69,15 @@ struct RespondCommand: AsyncParsableCommand {
         do {
             if stream {
                 let responseStream = session.streamResponse(to: promptText, options: options)
+                var previousContent = ""
                 for try await partial in responseStream {
-                    print(partial, terminator: "")
-                    fflush(stdout)
+                    let current = partial.content
+                    if current.count > previousContent.count {
+                        let newText = String(current.dropFirst(previousContent.count))
+                        print(newText, terminator: "")
+                        fflush(stdout)
+                    }
+                    previousContent = current
                 }
                 print()
             } else {

@@ -26,6 +26,12 @@ struct RespondCommand: AsyncParsableCommand {
     @Option(name: .long, help: "Output format (text or json)")
     var format: OutputFormat = .text
 
+    func validate() throws {
+        if stream && format == .json {
+            throw ValidationError("--stream and --format json cannot be used together.")
+        }
+    }
+
     func run() async throws {
         let model = try modelOptions.createModel()
         let tools = try toolOptions.resolveTools()

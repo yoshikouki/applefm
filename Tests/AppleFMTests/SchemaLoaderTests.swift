@@ -25,9 +25,8 @@ struct SchemaLoaderTests {
         }
         """
         let data = Data(json.utf8)
-        let schema = try SchemaLoader.load(from: data)
-        // If we got here without throwing, the schema was created successfully
-        _ = schema
+        // GenerationSchema is opaque — verify creation succeeds without throwing
+        _ = try SchemaLoader.load(from: data)
     }
 
     @Test("load anyOf string enum schema")
@@ -40,8 +39,7 @@ struct SchemaLoaderTests {
         }
         """
         let data = Data(json.utf8)
-        let schema = try SchemaLoader.load(from: data)
-        _ = schema
+        _ = try SchemaLoader.load(from: data)
     }
 
     @Test("load array schema")
@@ -63,8 +61,7 @@ struct SchemaLoaderTests {
         }
         """
         let data = Data(json.utf8)
-        let schema = try SchemaLoader.load(from: data)
-        _ = schema
+        _ = try SchemaLoader.load(from: data)
     }
 
     @Test("error on invalid JSON")
@@ -83,6 +80,29 @@ struct SchemaLoaderTests {
         }
     }
 
+    @Test("error on nonexistent file path")
+    func errorOnNonexistentFile() {
+        #expect(throws: AppError.self) {
+            try SchemaLoader.load(from: "/nonexistent/path/schema.json")
+        }
+    }
+
+    @Test("error on property that is not a JSON object")
+    func errorOnInvalidProperty() {
+        let json = """
+        {
+            "name": "Bad",
+            "properties": {
+                "field": "not-an-object"
+            }
+        }
+        """
+        let data = Data(json.utf8)
+        #expect(throws: AppError.self) {
+            try SchemaLoader.load(from: data)
+        }
+    }
+
     // MARK: - parseDynamicSchema Tests
 
     @Test("parseDynamicSchema uses default name when not specified")
@@ -90,8 +110,8 @@ struct SchemaLoaderTests {
         let dict: [String: Any] = [
             "description": "A simple schema"
         ]
-        let schema = try SchemaLoader.parseDynamicSchema(from: dict)
-        _ = schema
+        // Should not throw — verifies fallback to "Root" name
+        _ = try SchemaLoader.parseDynamicSchema(from: dict)
     }
 
     @Test("parseDynamicSchema with nested object properties")
@@ -103,8 +123,7 @@ struct SchemaLoaderTests {
                 "city": ["description": "City name"] as [String: Any],
             ]
         ]
-        let schema = try SchemaLoader.parseDynamicSchema(from: dict)
-        _ = schema
+        _ = try SchemaLoader.parseDynamicSchema(from: dict)
     }
 
     @Test("load JSON Schema with typed properties")
@@ -122,22 +141,19 @@ struct SchemaLoaderTests {
         }
         """
         let data = Data(json.utf8)
-        let schema = try SchemaLoader.load(from: data)
-        _ = schema
+        _ = try SchemaLoader.load(from: data)
     }
 
     @Test("parseDynamicSchema handles primitive types")
     func parsePrimitiveTypes() throws {
-        let stringSchema = try SchemaLoader.parseDynamicSchema(from: ["type": "string"])
-        _ = stringSchema
+        _ = try SchemaLoader.parseDynamicSchema(from: ["type": "string"])
+        _ = try SchemaLoader.parseDynamicSchema(from: ["type": "integer"])
+        _ = try SchemaLoader.parseDynamicSchema(from: ["type": "number"])
+        _ = try SchemaLoader.parseDynamicSchema(from: ["type": "boolean"])
+    }
 
-        let intSchema = try SchemaLoader.parseDynamicSchema(from: ["type": "integer"])
-        _ = intSchema
-
-        let numberSchema = try SchemaLoader.parseDynamicSchema(from: ["type": "number"])
-        _ = numberSchema
-
-        let boolSchema = try SchemaLoader.parseDynamicSchema(from: ["type": "boolean"])
-        _ = boolSchema
+    @Test("parseDynamicSchema with empty dictionary creates valid schema")
+    func parseDynamicSchemaEmpty() throws {
+        _ = try SchemaLoader.parseDynamicSchema(from: [:])
     }
 }

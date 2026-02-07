@@ -129,6 +129,29 @@ struct SessionStoreTests {
         try SessionStore.validateSessionName(name)
     }
 
+    @Test("backward compatibility with old metadata format missing optional fields")
+    func backwardCompatibility() throws {
+        let store = SessionStore(baseDirectory: testDir)
+        defer { try? FileManager.default.removeItem(at: testDir) }
+
+        // Simulate old format without new fields
+        let oldJson = """
+        {
+            "name": "old-session",
+            "createdAt": "2026-01-01T00:00:00Z"
+        }
+        """
+        try FileManager.default.createDirectory(at: testDir, withIntermediateDirectories: true)
+        try Data(oldJson.utf8).write(to: testDir.appendingPathComponent("old-session.json"))
+
+        let loaded = try store.loadMetadata(name: "old-session")
+        #expect(loaded.name == "old-session")
+        #expect(loaded.guardrails == nil)
+        #expect(loaded.adapterPath == nil)
+        #expect(loaded.tools == nil)
+        #expect(loaded.instructions == nil)
+    }
+
     @Test("metadata with extended fields round-trips correctly")
     func metadataExtendedFields() throws {
         let store = SessionStore(baseDirectory: testDir)

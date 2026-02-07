@@ -45,41 +45,46 @@ struct RespondCommand: AsyncParsableCommand {
         }
 
         let genOpts = generationOptions.withSettings(settings)
-        let model = try modelOptions.withSettings(settings).createModel()
         let tools = try toolOptions.withSettings(settings).resolveTools()
         let effectiveInstructions = instructions ?? settings.instructions
-        let session: LanguageModelSession
-        if let effectiveInstructions {
-            session = LanguageModelSession(model: model, tools: tools, instructions: effectiveInstructions)
-        } else {
-            session = LanguageModelSession(model: model, tools: tools)
-        }
 
         // No prompt + no file + TTY → interactive mode
         if prompt == nil && file == nil && isatty(fileno(Darwin.stdin)) != 0 {
+            let chatInstructions = effectiveInstructions ?? InteractiveLoop.defaultInstructions
+            let chatModel = try modelOptions.withSettings(settings).createModel(fallbackGuardrails: .permissive)
+            let chatSession = LanguageModelSession(model: chatModel, tools: tools, instructions: chatInstructions)
+
             let sessionName = InteractiveLoop.generateSessionName()
             let store = SessionStore()
 
             let metadata = SessionMetadata(
                 name: sessionName,
-                instructions: effectiveInstructions,
+                instructions: chatInstructions,
                 guardrails: modelOptions.guardrails?.rawValue,
                 adapterPath: modelOptions.adapter,
                 tools: toolOptions.tool.isEmpty ? nil : toolOptions.tool
             )
             try store.saveMetadata(metadata)
-            try store.saveTranscript(session.transcript, name: sessionName)
+            try store.saveTranscript(chatSession.transcript, name: sessionName)
 
             let options = genOpts.makeOptions()
 
             await InteractiveLoop().run(
-                session: session,
+                session: chatSession,
                 sessionName: sessionName,
                 store: store,
                 options: options,
                 settings: settings
             )
             return
+        }
+
+        let model = try modelOptions.withSettings(settings).createModel()
+        let session: LanguageModelSession
+        if let effectiveInstructions {
+            session = LanguageModelSession(model: model, tools: tools, instructions: effectiveInstructions)
+        } else {
+            session = LanguageModelSession(model: model, tools: tools)
         }
 
         let promptText = try PromptInput.resolve(argument: prompt, filePath: file)

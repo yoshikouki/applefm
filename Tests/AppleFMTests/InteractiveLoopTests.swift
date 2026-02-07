@@ -69,6 +69,11 @@ struct InteractiveLoopTests {
         #expect(loop.readInput() == nil)
     }
 
+    @Test("defaultInstructions is non-empty")
+    func defaultInstructionsExists() {
+        #expect(!InteractiveLoop.defaultInstructions.isEmpty)
+    }
+
     @Test("multiple session names are unique")
     func sessionNameUniqueness() throws {
         let name1 = InteractiveLoop.generateSessionName()

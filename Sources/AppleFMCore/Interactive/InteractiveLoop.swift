@@ -4,6 +4,7 @@ import FoundationModels
 
 /// REPL エンジン。DI seam で testability を確保
 public struct InteractiveLoop: Sendable {
+    public static let defaultInstructions = "You are a helpful assistant. Respond naturally and conversationally. Answer in the same language the user writes in."
     let readInput: @Sendable () -> String?
     let writeStderr: @Sendable (String) -> Void
 

@@ -18,16 +18,11 @@ struct ChatCommand: AsyncParsableCommand {
     func run() async throws {
         let settings = SettingsStore().load()
         let genOpts = generationOptions.withSettings(settings)
-        let model = try modelOptions.withSettings(settings).createModel()
+        let model = try modelOptions.withSettings(settings).createModel(fallbackGuardrails: .permissive)
         let tools = try toolOptions.withSettings(settings).resolveTools()
-        let effectiveInstructions = instructions ?? settings.instructions
+        let effectiveInstructions = instructions ?? settings.instructions ?? InteractiveLoop.defaultInstructions
 
-        let session: LanguageModelSession
-        if let effectiveInstructions {
-            session = LanguageModelSession(model: model, tools: tools, instructions: effectiveInstructions)
-        } else {
-            session = LanguageModelSession(model: model, tools: tools)
-        }
+        let session = LanguageModelSession(model: model, tools: tools, instructions: effectiveInstructions)
 
         let sessionName = InteractiveLoop.generateSessionName()
         let store = SessionStore()

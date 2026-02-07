@@ -4,6 +4,11 @@ import FoundationModels
 struct FileReadTool: Tool {
     let name = "file_read"
     let description = "Read the contents of a file at the given path"
+    let approval: ToolApproval
+
+    init(approval: ToolApproval = ToolApproval()) {
+        self.approval = approval
+    }
 
     @Generable(description: "Arguments for file reading")
     struct Arguments {
@@ -12,6 +17,10 @@ struct FileReadTool: Tool {
     }
 
     func call(arguments: Arguments) async throws -> String {
+        guard approval.requestApproval(toolName: name, description: "Read file: \(arguments.path)") else {
+            return "Tool execution denied by user."
+        }
+
         let url = URL(fileURLWithPath: arguments.path)
         return try String(contentsOf: url, encoding: .utf8)
     }

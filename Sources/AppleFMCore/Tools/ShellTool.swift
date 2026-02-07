@@ -4,6 +4,11 @@ import FoundationModels
 struct ShellTool: Tool {
     let name = "shell"
     let description = "Execute a shell command and return its output"
+    let approval: ToolApproval
+
+    init(approval: ToolApproval = ToolApproval()) {
+        self.approval = approval
+    }
 
     @Generable(description: "Arguments for shell command execution")
     struct Arguments {
@@ -12,6 +17,10 @@ struct ShellTool: Tool {
     }
 
     func call(arguments: Arguments) async throws -> String {
+        guard approval.requestApproval(toolName: name, description: arguments.command) else {
+            return "Tool execution denied by user."
+        }
+
         let process = Process()
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()

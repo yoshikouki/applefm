@@ -12,8 +12,8 @@ struct ModelLanguagesCommand: AsyncParsableCommand {
 
     func run() async throws {
         let model = SystemLanguageModel.default
-        let languages = model.supportedLanguages
-            .compactMap { $0.languageCode?.identifier }
+        let languages = Array(Set(model.supportedLanguages
+            .compactMap { $0.languageCode?.identifier }))
             .sorted()
 
         let formatter = OutputFormatter(format: format)

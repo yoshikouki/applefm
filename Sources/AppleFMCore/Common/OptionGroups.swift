@@ -48,13 +48,6 @@ struct ModelOptionGroup: ParsableArguments {
     }
 }
 
-// MARK: - Output Options
-
-struct OutputOptionGroup: ParsableArguments {
-    @Option(name: .long, help: "Output format (text or json)")
-    var format: OutputFormat = .text
-}
-
 // MARK: - Tool Options
 
 struct ToolOptionGroup: ParsableArguments {

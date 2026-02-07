@@ -29,9 +29,10 @@ struct ShellTool: Tool {
         process.standardOutput = stdoutPipe
         process.standardError = stderrPipe
         try process.run()
-        process.waitUntilExit()
+        // Read pipe data before waitUntilExit to avoid deadlock when pipe buffer fills
         let stdoutData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
         let stderrData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
         let stdout = String(data: stdoutData, encoding: .utf8) ?? ""
         let stderr = String(data: stderrData, encoding: .utf8) ?? ""
         if process.terminationStatus != 0 {

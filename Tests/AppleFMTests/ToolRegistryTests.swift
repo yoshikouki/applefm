@@ -41,4 +41,11 @@ struct ToolRegistryTests {
             try ToolRegistry.resolve(names: ["unknown"])
         }
     }
+
+    @Test("resolve with custom approval passes through")
+    func resolveWithCustomApproval() throws {
+        let approval = ToolApproval(mode: .auto)
+        let tools = try ToolRegistry.resolve(names: ["shell"], approval: approval)
+        #expect(tools.count == 1)
+    }
 }

@@ -1,0 +1,3 @@
+import AppleFMCore
+
+AppleFM.main()

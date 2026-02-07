@@ -13,11 +13,12 @@ struct AppErrorTests {
         #expect(error.message.contains("Device not eligible"))
     }
 
-    @Test("sessionNotFound message includes session name")
+    @Test("sessionNotFound message includes session name and guidance")
     func sessionNotFoundMessage() {
         let error = AppError.sessionNotFound("my-session")
         #expect(error.message.contains("Session not found"))
         #expect(error.message.contains("my-session"))
+        #expect(error.message.contains("applefm session list"))
     }
 
     @Test("invalidInput message includes detail")

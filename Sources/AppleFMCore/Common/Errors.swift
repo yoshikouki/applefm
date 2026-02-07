@@ -18,7 +18,7 @@ public enum AppError: Error, LocalizedError {
         case .generationError(let error):
             return Self.formatGenerationError(error)
         case .sessionNotFound(let name):
-            return "Session not found: \(name)"
+            return "Session not found: \(name). Use 'applefm session list' to see available sessions."
         case .invalidInput(let detail):
             return "Invalid input: \(detail)"
         case .fileError(let detail):
@@ -42,19 +42,19 @@ public enum AppError: Error, LocalizedError {
             case .exceededContextWindowSize:
                 return "Context window exceeded. Start a new session or reduce prompt size."
             case .guardrailViolation:
-                return "Request was blocked by safety guardrails."
+                return "Request was blocked by safety guardrails. Try rephrasing or use --guardrails permissive."
             case .rateLimited:
                 return "Rate limited. Please wait and try again."
             case .refusal:
                 return "Model refused the request."
             case .unsupportedLanguageOrLocale:
-                return "Unsupported language or locale."
+                return "Unsupported language or locale. Use 'applefm model languages' to see supported languages."
             case .assetsUnavailable:
-                return "Model assets are unavailable."
+                return "Model assets are unavailable. Check that Apple Intelligence is enabled in System Settings."
             case .unsupportedGuide:
                 return "Unsupported generation guide."
             case .decodingFailure:
-                return "Failed to decode generated content."
+                return "Failed to decode generated content. Check your schema file for correctness."
             case .concurrentRequests:
                 return "Concurrent requests are not supported. Wait for the current request to finish."
             @unknown default:

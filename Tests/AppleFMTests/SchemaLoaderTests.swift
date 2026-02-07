@@ -106,4 +106,38 @@ struct SchemaLoaderTests {
         let schema = try SchemaLoader.parseDynamicSchema(from: dict)
         _ = schema
     }
+
+    @Test("load JSON Schema with typed properties")
+    func loadTypedPropertiesSchema() throws {
+        let json = """
+        {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "A person name"},
+                "age": {"type": "integer", "description": "Age in years"},
+                "score": {"type": "number", "description": "Score value"},
+                "active": {"type": "boolean", "description": "Is active"}
+            },
+            "required": ["name", "age"]
+        }
+        """
+        let data = Data(json.utf8)
+        let schema = try SchemaLoader.load(from: data)
+        _ = schema
+    }
+
+    @Test("parseDynamicSchema handles primitive types")
+    func parsePrimitiveTypes() throws {
+        let stringSchema = try SchemaLoader.parseDynamicSchema(from: ["type": "string"])
+        _ = stringSchema
+
+        let intSchema = try SchemaLoader.parseDynamicSchema(from: ["type": "integer"])
+        _ = intSchema
+
+        let numberSchema = try SchemaLoader.parseDynamicSchema(from: ["type": "number"])
+        _ = numberSchema
+
+        let boolSchema = try SchemaLoader.parseDynamicSchema(from: ["type": "boolean"])
+        _ = boolSchema
+    }
 }

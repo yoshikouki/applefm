@@ -38,6 +38,7 @@ public struct SchemaLoader: Sendable {
     static func parseDynamicSchema(from dict: [String: Any]) throws -> DynamicGenerationSchema {
         let name = dict["name"] as? String ?? "Root"
         let description = dict["description"] as? String
+        let type = dict["type"] as? String
 
         // anyOf (string enum)
         if let anyOf = dict["anyOf"] as? [String] {
@@ -50,7 +51,7 @@ public struct SchemaLoader: Sendable {
             )
         }
 
-        // array
+        // array (via "items" key or "type": "array")
         if let items = dict["items"] as? [String: Any] {
             let itemSchema = try parseDynamicSchema(from: items)
             let minElements = dict["minItems"] as? Int
@@ -64,21 +65,36 @@ public struct SchemaLoader: Sendable {
 
         // object with properties
         if let props = dict["properties"] as? [String: Any] {
+            let required = dict["required"] as? [String] ?? []
             let properties = try props.sorted(by: { $0.key < $1.key }).map { key, value in
                 guard let propDict = value as? [String: Any] else {
                     throw AppError.invalidInput("Property '\(key)' must be a JSON object")
                 }
-                var propSchema = try parseDynamicSchema(from: propDict)
-                // Use property key as name if not specified
-                if propDict["name"] == nil {
-                    propSchema = try parseDynamicSchema(from: propDict.merging(["name": key]) { _, new in new })
-                }
-                return DynamicGenerationSchema.Property(name: key, schema: propSchema)
+                let propDescription = propDict["description"] as? String
+                let propSchema = try parseDynamicSchema(from: propDict.merging(["name": key]) { existing, _ in existing })
+                let isOptional = !required.contains(key)
+                return DynamicGenerationSchema.Property(name: key, description: propDescription, schema: propSchema, isOptional: isOptional)
             }
             return DynamicGenerationSchema(name: name, description: description, properties: properties)
         }
 
-        // Simple type (leaf node with just name/description)
+        // Primitive types (JSON Schema "type" field)
+        if let type {
+            switch type {
+            case "string":
+                return DynamicGenerationSchema(type: String.self)
+            case "integer":
+                return DynamicGenerationSchema(type: Int.self)
+            case "number":
+                return DynamicGenerationSchema(type: Double.self)
+            case "boolean":
+                return DynamicGenerationSchema(type: Bool.self)
+            default:
+                break
+            }
+        }
+
+        // Leaf node with just name/description (no type specified)
         return DynamicGenerationSchema(name: name, description: description, properties: [])
     }
 }

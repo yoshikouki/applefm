@@ -13,6 +13,12 @@ struct SessionNewCommand: AsyncParsableCommand {
     @Option(name: .long, help: "System instructions for the session")
     var instructions: String?
 
+    @Option(name: .long, help: "Guardrails level (default or permissive)")
+    var guardrails: GuardrailsOption = .default
+
+    @Option(name: .long, help: "Path to adapter file")
+    var adapter: String?
+
     @Option(name: .long, help: "Output format (text or json)")
     var format: OutputFormat = .text
 
@@ -23,16 +29,12 @@ struct SessionNewCommand: AsyncParsableCommand {
             throw AppError.invalidInput("Session '\(name)' already exists.")
         }
 
-        let model = SystemLanguageModel.default
-        guard model.isAvailable else {
-            throw AppError.modelNotAvailable("Model is not available.")
-        }
-
+        let model = try ModelFactory.createModel(guardrails: guardrails, adapterPath: adapter)
         let session: LanguageModelSession
         if let instructions {
-            session = LanguageModelSession(instructions: instructions)
+            session = LanguageModelSession(model: model, instructions: instructions)
         } else {
-            session = LanguageModelSession()
+            session = LanguageModelSession(model: model)
         }
 
         let metadata = SessionMetadata(name: name, instructions: instructions)

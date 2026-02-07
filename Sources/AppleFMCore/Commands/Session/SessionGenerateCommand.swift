@@ -1,11 +1,11 @@
 import ArgumentParser
-import Darwin
+import Foundation
 import FoundationModels
 
-struct SessionRespondCommand: AsyncParsableCommand {
+struct SessionGenerateCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "respond",
-        abstract: "Send a prompt to a session and get a response"
+        commandName: "generate",
+        abstract: "Generate structured output using a JSON schema"
     )
 
     @Argument(help: "Session name")
@@ -17,19 +17,19 @@ struct SessionRespondCommand: AsyncParsableCommand {
     @Option(name: .long, help: "Read prompt from file")
     var file: String?
 
+    @Option(name: .long, help: "Path to JSON schema file")
+    var schema: String
+
     @Option(name: .long, help: "Maximum response tokens")
     var maxTokens: Int?
 
-    @Flag(name: .long, help: "Stream response incrementally")
-    var stream: Bool = false
-
     @Option(name: .long, help: "Output format (text or json)")
-    var format: OutputFormat = .text
+    var format: OutputFormat = .json
 
     func run() async throws {
         let store = SessionStore()
 
-        _ = try store.loadMetadata(name: name) // Verify session exists
+        _ = try store.loadMetadata(name: name)
         let transcript = try store.loadTranscript(name: name)
 
         let model = SystemLanguageModel.default
@@ -39,26 +39,24 @@ struct SessionRespondCommand: AsyncParsableCommand {
 
         let session = LanguageModelSession(transcript: transcript)
         let promptText = try PromptInput.resolve(argument: prompt, filePath: file)
+        let generationSchema = try SchemaLoader.load(from: schema)
 
         var options = GenerationOptions()
         if let maxTokens {
             options.maximumResponseTokens = maxTokens
         }
 
-        if stream {
-            let responseStream = session.streamResponse(to: promptText, options: options)
-            for try await partial in responseStream {
-                print(partial, terminator: "")
-                fflush(stdout)
-            }
-            print() // Final newline
-        } else {
-            let response = try await session.respond(to: promptText, options: options)
-            let formatter = OutputFormatter(format: format)
-            print(formatter.output(response.content))
-        }
+        let response = try await session.respond(
+            to: promptText,
+            schema: generationSchema,
+            options: options
+        )
 
         // Save updated transcript
         try store.saveTranscript(session.transcript, name: name)
+
+        // Output the generated content
+        let formatter = OutputFormatter(format: format)
+        print(formatter.output(String(describing: response.content)))
     }
 }

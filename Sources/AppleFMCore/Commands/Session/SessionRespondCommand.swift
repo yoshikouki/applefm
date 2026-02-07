@@ -55,6 +55,9 @@ struct SessionRespondCommand: AsyncParsableCommand {
         let promptText = try PromptInput.resolve(argument: prompt, filePath: file)
         let options = generationOptions.makeOptions()
 
+        // Save transcript even if generation fails (preserves partial conversation)
+        defer { try? store.saveTranscript(session.transcript, name: name) }
+
         do {
             if stream {
                 let responseStream = session.streamResponse(to: promptText, options: options)
@@ -67,8 +70,5 @@ struct SessionRespondCommand: AsyncParsableCommand {
         } catch {
             throw AppError.generationError(error)
         }
-
-        // Save updated transcript
-        try store.saveTranscript(session.transcript, name: name)
     }
 }

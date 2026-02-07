@@ -46,15 +46,15 @@ struct SessionGenerateCommand: AsyncParsableCommand {
         let generationSchema = try SchemaLoader.load(from: schema)
         let options = generationOptions.makeOptions()
 
+        // Save transcript even if generation fails (preserves partial conversation)
+        defer { try? store.saveTranscript(session.transcript, name: name) }
+
         do {
             let response = try await session.respond(
                 to: promptText,
                 schema: generationSchema,
                 options: options
             )
-
-            // Save updated transcript
-            try store.saveTranscript(session.transcript, name: name)
 
             let formatter = OutputFormatter(format: format)
             print(formatter.output(String(describing: response.content)))

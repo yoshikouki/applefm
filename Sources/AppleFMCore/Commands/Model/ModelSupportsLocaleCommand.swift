@@ -20,9 +20,18 @@ struct ModelSupportsLocaleCommand: AsyncParsableCommand {
         let supported = model.supportsLocale(locale)
 
         let formatter = OutputFormatter(format: format)
-        print(formatter.output([
-            "locale": localeIdentifier,
-            "supported": supported ? "true" : "false",
-        ]))
+        switch format {
+        case .text:
+            print(formatter.output([
+                "locale": localeIdentifier,
+                "supported": supported ? "true" : "false",
+            ]))
+        case .json:
+            struct Result: Encodable {
+                let locale: String
+                let supported: Bool
+            }
+            print(formatter.outputEncodable(Result(locale: localeIdentifier, supported: supported)))
+        }
     }
 }

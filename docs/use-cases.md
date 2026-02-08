@@ -33,6 +33,24 @@ applefm の3大差別化ポイント **完全オフライン**・**プライバ�
 - オフライン環境（飛行機, 地下鉄, 山間部）
 - 他の AI ツールの前処理/後処理（MCP 連携, パイプラインチェーン）
 
+## パイプ入力パターン
+
+applefm のプロンプト入力は **CLI 引数 > `--file` > stdin** の優先順位で解決される。パイプ入力と CLI 引数を同時に使うと **stdin は無視される**。
+
+```bash
+# ✅ 正しい: パイプ + --instructions（stdin がプロンプト、--instructions がシステム指示）
+cat file.txt | applefm respond --instructions "要約して"
+
+# ✅ 正しい: CLI 引数のみ（パイプなし）
+applefm respond "Swiftのエラーハンドリングを教えて"
+
+# ✅ 正しい: パイプのみ（指示をパイプ内容に含める）
+echo "Swiftのエラーハンドリングを教えて" | applefm respond
+
+# ❌ 間違い: パイプ + CLI 引数（stdin が無視され、ファイル内容がモデルに渡らない）
+cat file.txt | applefm respond "要約して"
+```
+
 ---
 
 ## 1. 開発者ワークフロー
@@ -43,16 +61,16 @@ applefm の3大差別化ポイント **完全オフライン**・**プライバ�
 
 ```bash
 # ステージ済み差分をオフラインでレビュー
-git diff --staged | applefm respond "バグ・パフォーマンス・セキュリティの観点でレビューして" --stream
+git diff --staged | applefm respond --instructions "バグ・パフォーマンス・セキュリティの観点でレビューして" --stream
 
 # file-read ツールでコンテキスト付きレビュー
 applefm respond "SessionStore.swift を読んでエラーハンドリングの観点でレビューして" \
   --tool file-read --tool-approval auto --stream
 
 # セッションで複数ファイルを文脈付きレビュー
-applefm session new review --instructions "セキュリティに詳しいシニア開発者として振る舞って"
-cat Auth.swift | applefm session respond review "このファイルをレビュー"
-cat Token.swift | applefm session respond review "前のファイルとの整合性も含めてレビュー"
+applefm session new review --instructions "コードレビューを行ってください。セキュリティ、パフォーマンス、可読性の観点で評価してください"
+cat Auth.swift | applefm session respond review
+cat Token.swift | applefm session respond review
 ```
 
 ### 1-2. コード生成・テスト生成
@@ -64,7 +82,7 @@ applefm generate "User モデルの CRUD を生成。フィールド: id, name, 
 
 # 実装ファイルからテスト自動生成
 cat Calculator.swift | applefm respond \
-  "Swift Testing フレームワーク（@Suite, @Test, #expect）でユニットテストを生成して" --stream
+  --instructions "Swift Testing フレームワーク（@Suite, @Test, #expect）でユニットテストを生成して" --stream
 ```
 
 ### 1-3. Git ワークフロー統合
@@ -72,31 +90,32 @@ cat Calculator.swift | applefm respond \
 ```bash
 # コミットメッセージ自動生成
 git commit -m "$(git diff --staged | applefm respond \
-  'Conventional Commits 形式のメッセージを1行で。メッセージのみ出力')"
+  --instructions 'Conventional Commits 形式のメッセージを1行で。メッセージのみ出力')"
 
 # PR 説明文生成
 git log main..HEAD --oneline | applefm respond \
-  "## Summary, ## Changes, ## Test Plan のセクションを含むPR説明文を生成して" --stream
+  --instructions "## Summary, ## Changes, ## Test Plan のセクションを含むPR説明文を生成して" --stream
 
 # リリースノート生成
 git log v1.0.0..v1.1.0 --pretty=format:"%s" | applefm respond \
-  "ユーザー向けリリースノートを生成。カテゴリ別に分類して"
+  --instructions "ユーザー向けリリースノートを生成。カテゴリ別に分類して"
 
 # コンフリクト解決支援
-git diff --diff-filter=U | applefm respond "マージコンフリクトの解決方法を提案して" --stream
+git diff --diff-filter=U | applefm respond --instructions "マージコンフリクトの解決方法を提案して" --stream
 ```
 
 ### 1-4. ビルドエラー・テスト失敗の解析
 
 ```bash
 # ビルドエラー解析
-swift build 2>&1 | applefm respond "エラーの原因と修正方法を説明して" --stream
+swift build 2>&1 | applefm respond --instructions "エラーの原因と修正方法を説明して" --stream
 
 # テスト失敗の解析
-swift test 2>&1 | applefm respond "失敗したテストの原因と修正方法を提案して" --stream
+swift test 2>&1 | applefm respond --instructions "失敗したテストの原因と修正方法を提案して" --stream
 
 # 構造化ビルドレポート
-swift build 2>&1 | applefm generate --schema build-report.json "ビルド結果をレポートにまとめて" --format json
+swift build 2>&1 | applefm generate --instructions "ビルド結果をレポートにまとめて" \
+  --schema build-report.json --format json
 ```
 
 ### 1-5. ドキュメント生成・メンテナンス
@@ -104,7 +123,7 @@ swift build 2>&1 | applefm generate --schema build-report.json "ビルド結果�
 ```bash
 # パブリック API のドキュメントコメント生成
 cat NetworkManager.swift | applefm respond \
-  "各パブリックメソッドに /// 形式の Swift ドキュメントコメントを生成して" --stream
+  --instructions "各パブリックメソッドに /// 形式の Swift ドキュメントコメントを生成して" --stream
 
 # アーキテクチャ図生成（Mermaid 記法）
 applefm respond "Sources/ 以下を読んでコンポーネント間の依存関係を Mermaid 記法で" \
@@ -112,21 +131,22 @@ applefm respond "Sources/ 以下を読んでコンポーネント間の依存関
 
 # API 変更ログ
 git diff v1.0.0..HEAD -- "Sources/**/*.swift" | applefm respond \
-  "パブリック API の変更を検出して CHANGELOG エントリを生成して"
+  --instructions "パブリック API の変更を検出して CHANGELOG エントリを生成して"
 ```
 
 ### 1-6. デバッグ・トラブルシューティング
 
 ```bash
 # クラッシュログ解析
-cat crash.log | applefm respond "クラッシュの原因と修正方法を説明して" --stream
+cat crash.log | applefm respond --instructions "クラッシュの原因と修正方法を説明して" --stream
 
 # インタラクティブなデバッグ（モデルが自律的に調査）
 applefm chat --tool shell --tool file-read \
   --instructions "Swift デバッグの専門家として、シェルコマンドやファイル読み取りを活用して調査して"
 
 # 構造化バグレポート
-cat error.log | applefm generate --schema bug-report.json "バグレポートを作成して" --format json
+cat error.log | applefm generate --instructions "バグレポートを作成して" \
+  --schema bug-report.json --format json
 ```
 
 ---
@@ -139,16 +159,17 @@ awk/sed では正規表現の設計が必要だった処理を自然言語で記
 
 ```bash
 # 自然言語フィルタリング
-cat sales.csv | applefm respond "売上100万円以上の行だけCSV形式で抽出して"
+cat sales.csv | applefm respond --instructions "売上100万円以上の行だけCSV形式で抽出して"
 
 # テキスト変換
-cat table.md | applefm respond "この Markdown テーブルを CSV 形式に変換して"
+cat table.md | applefm respond --instructions "この Markdown テーブルを CSV 形式に変換して"
 
 # diff の自然言語要約
-git diff HEAD~1 | applefm respond "変更内容を箇条書きで要約して"
+git diff HEAD~1 | applefm respond --instructions "変更内容を箇条書きで要約して"
 
 # 感情分析（構造化出力）
-cat review.txt | applefm generate "感情を分析して" --schema sentiment.json --format json
+cat review.txt | applefm generate --instructions "感情を分析して" \
+  --schema sentiment.json --format json
 ```
 
 ### 2-2. ログ分析・モニタリング
@@ -156,18 +177,20 @@ cat review.txt | applefm generate "感情を分析して" --schema sentiment.jso
 ```bash
 # バッチログ分析（構造化出力）
 tail -1000 /var/log/system.log | applefm generate \
-  "ログを分析して" --schema log-analysis.json --format json
+  --instructions "ログを分析して" --schema log-analysis.json --format json
 
 # リアルタイムログ監視 + macOS 通知
 tail -f /var/log/app/error.log | while IFS= read -r line; do
-  ANALYSIS=$(echo "$line" | applefm respond "重大な問題があれば CRITICAL: で始めて報告。問題なければ OK")
+  ANALYSIS=$(echo "$line" | applefm respond \
+    --instructions "重大な問題があれば CRITICAL: で始めて報告。問題なければ OK")
   if echo "$ANALYSIS" | grep -q "^CRITICAL:"; then
     osascript -e "display notification \"$ANALYSIS\" with title \"applefm Alert\""
   fi
 done
 
 # ビルドログ分析
-xcodebuild build 2>&1 | applefm respond "エラーの原因と修正方法を簡潔に" --temperature 0.2
+xcodebuild build 2>&1 | applefm respond \
+  --instructions "エラーの原因と修正方法を簡潔に" --temperature 0.2
 ```
 
 ### 2-3. データ変換・ETL
@@ -176,17 +199,19 @@ xcodebuild build 2>&1 | applefm respond "エラーの原因と修正方法を簡
 
 ```bash
 # 非構造化テキスト → JSON
-cat meeting_email.txt | applefm generate "会議情報を抽出して" --schema meeting.json --format json
+cat meeting_email.txt | applefm generate --instructions "会議情報を抽出して" \
+  --schema meeting.json --format json
 
 # マルチステップ ETL パイプライン
 for file in reports/*.txt; do
-  applefm generate --file "$file" --schema report.json --format json \
+  applefm generate --file "$file" --instructions "レポートを構造化して" \
+    --schema report.json --format json \
     > "structured/$(basename "$file" .txt).json"
 done
 
 # API レスポンスの再構造化
 gh pr list --json title,author,state,body | \
-  applefm generate "各PRを要約して" --schema pr-summary.json --format json
+  applefm generate --instructions "各PRを要約して" --schema pr-summary.json --format json
 ```
 
 ### 2-4. cron / launchd 統合
@@ -195,7 +220,7 @@ gh pr list --json title,author,state,body | \
 #!/bin/bash
 # daily_health_report.sh — launchd で毎朝8時に実行
 { df -h /; vm_stat; ps aux | sort -nrk 3 | head -10; } | \
-  applefm respond "日次ヘルスレポートを生成して" --temperature 0.2 \
+  applefm respond --instructions "日次ヘルスレポートを生成して" --temperature 0.2 \
   > ~/reports/health-$(date +%F).md
 ```
 
@@ -226,14 +251,15 @@ gh pr list --json title,author,state,body | \
 
 ```bash
 # ~/.zshrc に追加
-explain() { echo "$*" | applefm respond "このコマンドを説明して" --temperature 0.2; }
+explain() { echo "$*" | applefm respond --instructions "このコマンドを説明して" --temperature 0.2; }
 tldr-ai() { applefm respond "コマンド '$1' の実用例を5つ" --temperature 0.5; }
 fixcmd() {
   local last_cmd=$(fc -ln -1)
   local last_err=$(eval "$last_cmd" 2>&1)
-  echo "Command: $last_cmd\nError: $last_err" | applefm respond "修正後のコマンドのみ出力して" --temperature 0.2
+  echo "Command: $last_cmd\nError: $last_err" | applefm respond \
+    --instructions "修正後のコマンドのみ出力して" --temperature 0.2
 }
-summarize() { cat "$1" | applefm respond "3行で要約して" --temperature 0.3; }
+summarize() { cat "$1" | applefm respond --instructions "3行で要約して" --temperature 0.3; }
 ```
 
 ---
@@ -304,11 +330,12 @@ applefm session new journal-$(date +%Y%m) \
 
 # 週次振り返り自動サマリー
 cat ~/journal/2026-02-{02..08}.md | \
-  applefm respond "この一週間の感情変化パターン、達成したこと、来週への提案をまとめて"
+  applefm respond --instructions "この一週間の感情変化パターン、達成したこと、来週への提案をまとめて"
 
 # 構造化ジャーナルエントリー
 echo "新プロジェクトのキックオフがあった。チームと良い議論ができた" | \
-  applefm generate --schema journal.json --format json >> ~/journal/reflections.jsonl
+  applefm generate --instructions "ジャーナルエントリーを構造化して" \
+  --schema journal.json --format json >> ~/journal/reflections.jsonl
 ```
 
 ### 3-5. プライバシー重視の個人アシスタント
@@ -321,8 +348,8 @@ applefm session new health --instructions "健康管理アシスタントとし�
 applefm session respond health "今週: 月曜-頭痛, 水曜-胃もたれ, 金曜-肩こり"
 
 # 家計データの整理
-cat expenses-202602.csv | applefm generate --schema expense-analysis.json --format json \
-  --instructions "支出データを分析して節約アドバイスをください"
+cat expenses-202602.csv | applefm generate --instructions "支出データを分析して節約アドバイスをください" \
+  --schema expense-analysis.json --format json
 
 # 個人的な悩み相談
 applefm chat --instructions "傾聴力のあるカウンセラーとして。アドバイスを押し付けず、考えを整理する手助けをして"
@@ -345,15 +372,18 @@ applefm session respond tax-prep "フリーランスの経費として認めら�
 function M.explain_selection()
   local lines = vim.fn.getline("'<", "'>")
   local text = table.concat(lines, "\n")
-  local result = vim.fn.system({ "applefm", "respond", "このコードを説明して" }, text)
+  local result = vim.fn.system(
+    { "applefm", "respond", "--instructions", "このコードを簡潔に説明して" }, text)
   -- フローティングウィンドウで表示
 end
 
 -- コミットメッセージ生成 (fugitive 連携)
 function M.generate_commit_msg()
   local diff = vim.fn.system("git diff --cached")
-  local result = vim.fn.system({ "applefm", "respond",
-    "--instructions", "Generate a conventional commit message. Output only the message." }, diff)
+  local result = vim.fn.system({
+    "applefm", "respond",
+    "--instructions", "Generate a conventional commit message. Output only the message.",
+  }, diff)
   vim.fn.setreg('"', vim.trim(result))
 end
 
@@ -371,13 +401,13 @@ vim.keymap.set("n", "<leader>ac", M.generate_commit_msg, { desc = "applefm: Comm
     {
       "label": "applefm: Explain Selection",
       "type": "shell",
-      "command": "echo '${selectedText}' | applefm respond 'このコードを説明して' --stream",
+      "command": "echo '${selectedText}' | applefm respond --instructions 'このコードを説明して' --stream",
       "presentation": { "reveal": "always", "panel": "dedicated" }
     },
     {
       "label": "applefm: Generate Unit Test",
       "type": "shell",
-      "command": "cat '${file}' | applefm respond 'ユニットテストを生成して' --stream",
+      "command": "cat '${file}' | applefm respond --instructions 'ユニットテストを生成して' --stream",
       "presentation": { "reveal": "always", "panel": "dedicated" }
     }
   ]
@@ -396,7 +426,7 @@ COMMIT_SOURCE=$2
 [ -n "$COMMIT_SOURCE" ] && exit 0
 
 git diff --cached | head -500 | applefm respond \
-  "Conventional Commits 形式のメッセージを1行で。メッセージのみ出力" \
+  --instructions "Conventional Commits 形式のメッセージを1行で。メッセージのみ出力" \
   --temperature 0.3 > "$COMMIT_MSG_FILE"
 ```
 
@@ -406,7 +436,7 @@ git diff --cached | head -500 | applefm respond \
 REMOTE=$1
 DIFF=$(git diff "$REMOTE/$(git branch --show-current)..HEAD" | head -2000)
 RESULT=$(echo "$DIFF" | applefm respond \
-  "ハードコードされたシークレットやセキュリティ問題があれば指摘して。問題なければ OK とだけ出力して")
+  --instructions "ハードコードされたシークレットやセキュリティ問題があれば指摘して。問題なければ OK とだけ出力して")
 
 if [ "$RESULT" != "OK" ]; then
   echo "Security concerns: $RESULT"
@@ -427,14 +457,14 @@ fi
 # @raycast.mode silent
 # @raycast.argument1 { "type": "text", "placeholder": "Instruction" }
 
-pbpaste | applefm respond "$1" | pbcopy
+pbpaste | applefm respond --instructions "$1" | pbcopy
 ```
 
 ```bash
 #!/bin/bash
 # Alfred ユニバーサルアクション
 # 選択テキストに対して翻訳・要約・改善を実行
-echo "$1" | applefm respond "$2"
+echo "$1" | applefm respond --instructions "$2"
 ```
 
 ### 4-5. Apple エコシステム（Shortcuts / AppleScript / Automator）
@@ -444,14 +474,15 @@ echo "$1" | applefm respond "$2"
 ```
 # Apple Shortcuts: 「テキストを要約」
 1. [入力を受け取る] → テキスト
-2. [シェルスクリプトを実行]: echo "$input" | applefm respond "3行で要約して"
+2. [シェルスクリプトを実行]: echo "$input" | applefm respond --instructions "3行で要約して"
 3. [クリップボードにコピー]
 ```
 
 ```bash
 # Automator フォルダアクション: テキストファイル追加時に自動要約
 for f in "$@"; do
-  cat "$f" | applefm respond "要約して" > ~/summaries/"$(basename "$f" .txt)-summary.txt"
+  cat "$f" | applefm respond --instructions "要約して" \
+    > ~/summaries/"$(basename "$f" .txt)-summary.txt"
   osascript -e "display notification \"$(basename "$f") の要約完了\" with title \"applefm\""
 done
 ```
@@ -468,7 +499,8 @@ bind a if-shell "tmux list-panes -F '#{pane_title}' | grep -q applefm" \
 ```bash
 #!/bin/bash
 # 隣接ペインのエラー出力を自動分析
-tmux capture-pane -t '{left}' -p -S -50 | applefm respond "エラーを分析して解決方法を提案して" --stream
+tmux capture-pane -t '{left}' -p -S -50 | applefm respond \
+  --instructions "エラーを分析して解決方法を提案して" --stream
 ```
 
 ---
@@ -493,9 +525,9 @@ tmux capture-pane -t '{left}' -p -S -50 | applefm respond "エラーを分析し
 
 ```bash
 if grep -qiE "(api_key|secret|password)" "$FILE"; then
-  cat "$FILE" | applefm respond "レビューして"       # オンデバイス
+  cat "$FILE" | applefm respond --instructions "レビューして"  # オンデバイス
 else
-  claude -p "Review this code: $(cat "$FILE")"       # クラウド
+  claude -p "Review this code: $(cat "$FILE")"                 # クラウド
 fi
 ```
 
@@ -504,9 +536,9 @@ fi
 ```bash
 case "$TASK" in
   "typo"|"format"|"translate"|"commit-msg")
-    echo "$CONTENT" | applefm respond "$TASK" ;;       # 即座に応答
+    echo "$CONTENT" | applefm respond --instructions "$TASK" ;;  # 即座に応答
   "architecture"|"security-audit")
-    claude -p "$TASK: $CONTENT" ;;                     # 深い分析
+    claude -p "$TASK: $CONTENT" ;;                               # 深い分析
 esac
 ```
 
@@ -515,7 +547,7 @@ esac
 ```bash
 # Step 1: applefm でコードベースを要約（機密コードはローカルに留まる）
 find src -name "*.ts" | while read f; do
-  cat "$f" | applefm respond "このファイルの責務を1行で要約:"
+  cat "$f" | applefm respond --instructions "このファイルの責務を1行で要約:"
 done > /tmp/codebase-summary.txt
 
 # Step 2: 要約のみをクラウドに送信

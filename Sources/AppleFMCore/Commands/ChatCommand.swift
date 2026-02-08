@@ -11,6 +11,9 @@ struct ChatCommand: AsyncParsableCommand {
     @Option(name: .long, help: "System instructions")
     var instructions: String?
 
+    @Option(name: .long, help: "Response language hint (ja, en)")
+    var language: String?
+
     @OptionGroup var generationOptions: GenerationOptionGroup
     @OptionGroup var modelOptions: ModelOptionGroup
     @OptionGroup var toolOptions: ToolOptionGroup
@@ -20,7 +23,7 @@ struct ChatCommand: AsyncParsableCommand {
         let genOpts = generationOptions.withSettings(settings)
         let model = try modelOptions.withSettings(settings).createModel(fallbackGuardrails: .permissive)
         let tools = try toolOptions.withSettings(settings).resolveTools()
-        let effectiveInstructions = instructions ?? settings.instructions ?? InteractiveLoop.defaultInstructions
+        let effectiveInstructions = settings.effectiveInstructions(cliInstructions: instructions, cliLanguage: language) ?? InteractiveLoop.defaultInstructions
 
         let session = LanguageModelSession(model: model, tools: tools, instructions: effectiveInstructions)
 

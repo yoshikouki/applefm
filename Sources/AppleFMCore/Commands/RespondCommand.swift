@@ -18,6 +18,9 @@ struct RespondCommand: AsyncParsableCommand {
     @Option(name: .long, help: "System instructions")
     var instructions: String?
 
+    @Option(name: .long, help: "Response language hint (ja, en)")
+    var language: String?
+
     @OptionGroup var generationOptions: GenerationOptionGroup
     @OptionGroup var modelOptions: ModelOptionGroup
     @OptionGroup var toolOptions: ToolOptionGroup
@@ -46,7 +49,7 @@ struct RespondCommand: AsyncParsableCommand {
 
         let genOpts = generationOptions.withSettings(settings)
         let tools = try toolOptions.withSettings(settings).resolveTools()
-        let effectiveInstructions = instructions ?? settings.instructions
+        let effectiveInstructions = settings.effectiveInstructions(cliInstructions: instructions, cliLanguage: language)
 
         // No prompt + no file + TTY → interactive mode
         if prompt == nil && file == nil && isatty(fileno(Darwin.stdin)) != 0 {

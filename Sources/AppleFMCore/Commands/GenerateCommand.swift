@@ -20,6 +20,9 @@ struct GenerateCommand: AsyncParsableCommand {
     @Option(name: .long, help: "System instructions")
     var instructions: String?
 
+    @Option(name: .long, help: "Response language hint (ja, en)")
+    var language: String?
+
     @OptionGroup var generationOptions: GenerationOptionGroup
     @OptionGroup var modelOptions: ModelOptionGroup
 
@@ -32,7 +35,7 @@ struct GenerateCommand: AsyncParsableCommand {
         let effectiveFormat = format ?? settings.format.flatMap { OutputFormat(rawValue: $0) } ?? .json
 
         let model = try modelOptions.withSettings(settings).createModel()
-        let effectiveInstructions = instructions ?? settings.instructions
+        let effectiveInstructions = settings.effectiveInstructions(cliInstructions: instructions, cliLanguage: language)
         let session: LanguageModelSession
         if let effectiveInstructions {
             session = LanguageModelSession(model: model, instructions: effectiveInstructions)

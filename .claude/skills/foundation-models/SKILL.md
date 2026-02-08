@@ -157,19 +157,9 @@ let restoredSession = LanguageModelSession(tools: [...], transcript: transcript)
 
 ## References
 
-- API 型・メソッド詳細: `references/api-reference.md`
+- API 型・メソッド詳細 (Tool protocol 含む): `references/api-reference.md`
 - Tool calling パターン: `references/tool-calling.md`
 - Guided Generation 詳細: `references/guided-generation.md`
 - ベストプラクティス: `references/best-practices.md`
-- Navigator 全展開カバレッジ: `references/navigator-coverage.md`
-- Essentials 記事まとめ: `references/essentials.md`
-- Prompting 記事まとめ: `references/prompting.md`
-- Tool API 詳細: `references/tool-api.md`
-- Tool メンバー一覧: `references/tool-members.md`
-- SystemLanguageModel 詳細: `references/systemlanguagemodel.md`
-- SystemLanguageModel メンバー一覧: `references/systemlanguagemodel-members.md`
-- LanguageModelSession メンバー一覧: `references/languagemodelsession-members.md`
-- Transcript メンバー一覧: `references/transcript-members.md`
-- カスタム Adapter: `references/adapter.md`
-- Content Tagging: `references/content-tagging.md`
 - **モデル特性ガイド (実機テスト)**: `references/model-characteristics.md`
+- Apple Developer Documentation URL 一覧: `references/navigator-coverage.md`

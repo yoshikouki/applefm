@@ -41,6 +41,7 @@ init(adapter: SystemLanguageModel.Adapter, guardrails: SystemLanguageModel.Guard
 ```swift
 struct UseCase {
     static let general: SystemLanguageModel.UseCase
+    static let contentTagging: SystemLanguageModel.UseCase  // タグ付け・分類用途
 }
 ```
 
@@ -224,6 +225,46 @@ case response(Transcript.Response)
 ```
 
 SwiftUI の `List` で表示可能。`Codable` に準拠しており JSON シリアライズで永続化可能。
+
+### Additional Types
+
+- `Transcript.ResponseFormat`: 応答フォーマット種別
+- `Transcript.StructuredSegment`: 構造化応答のセグメント
+
+---
+
+## Tool Protocol
+
+モデルが実行時にアプリのコードを呼び出すためのプロトコル。`Sendable` に準拠が必要。
+
+```swift
+protocol Tool: Sendable {
+    associatedtype Arguments: ConvertibleFromGeneratedContent
+    associatedtype Output: PromptRepresentable
+
+    var name: String { get }
+    var description: String { get }
+    var parameters: GenerationSchema { get }
+    var includesSchemaInInstructions: Bool { get }
+
+    func call(arguments: Arguments) async throws -> Output
+}
+```
+
+### Properties
+
+| Property | Type | Description |
+|---|---|---|
+| `name` | `String` | ユニークなツール名 (例: `get_weather`) |
+| `description` | `String` | いつ/どのようにツールを使うかの自然言語説明 |
+| `parameters` | `GenerationSchema` | 引数のスキーマ |
+| `includesSchemaInInstructions` | `Bool` | true なら name/description/parameters が Instructions に注入される |
+
+### Key Constraints
+
+- `Arguments` は `ConvertibleFromGeneratedContent` に準拠 (`@Generable` で自動準拠)
+- `Output` は `PromptRepresentable` に準拠 (`String`, `Generable` 型, それらの配列)
+- ツール定義はコンテキストサイズに影響するため、説明は短く、ツール数は最小限にする
 
 ---
 

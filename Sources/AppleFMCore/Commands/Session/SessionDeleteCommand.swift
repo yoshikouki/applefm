@@ -35,7 +35,6 @@ struct SessionDeleteCommand: AsyncParsableCommand {
         }
 
         try store.deleteSession(name: name)
-        try? SessionLogger().deleteLog(sessionId: name)
         print("Session '\(name)' deleted.")
     }
 }

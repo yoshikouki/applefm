@@ -29,9 +29,6 @@ struct GenerateCommand: AsyncParsableCommand {
     @Option(name: .long, help: "Output format (text or json)")
     var format: OutputFormat?
 
-    @Flag(name: .long, help: "Output raw JSON without content wrapper")
-    var raw: Bool = false
-
     func run() async throws {
         let settings = SettingsStore().load()
 
@@ -61,12 +58,10 @@ struct GenerateCommand: AsyncParsableCommand {
                 options: options
             )
             let output = String(describing: response.content)
-            let effectiveRaw = raw || settings.rawJson ?? false
-            if effectiveRaw && effectiveFormat == .json {
+            if effectiveFormat == .json {
                 print(output)
             } else {
-                let formatter = OutputFormatter(format: effectiveFormat)
-                print(formatter.output(output))
+                print(OutputFormatter(format: effectiveFormat).output(output))
             }
         } catch {
             throw AppError.generationError(error)

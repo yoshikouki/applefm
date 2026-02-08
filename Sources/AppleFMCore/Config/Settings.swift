@@ -26,7 +26,6 @@ public struct Settings: Codable, Sendable, Equatable {
     public var instructions: String?
     public var logEnabled: Bool?
     public var language: String?
-    public var rawJson: Bool?
 
     public init(
         maxTokens: Int? = nil,
@@ -43,8 +42,7 @@ public struct Settings: Codable, Sendable, Equatable {
         stream: Bool? = nil,
         instructions: String? = nil,
         logEnabled: Bool? = nil,
-        language: String? = nil,
-        rawJson: Bool? = nil
+        language: String? = nil
     ) {
         self.maxTokens = maxTokens
         self.temperature = temperature
@@ -61,7 +59,6 @@ public struct Settings: Codable, Sendable, Equatable {
         self.instructions = instructions
         self.logEnabled = logEnabled
         self.language = language
-        self.rawJson = rawJson
     }
 
     /// 有効な設定キー一覧
@@ -69,7 +66,7 @@ public struct Settings: Codable, Sendable, Equatable {
         "maxTokens", "temperature", "sampling", "samplingThreshold",
         "samplingTop", "samplingSeed", "guardrails", "adapter",
         "tools", "toolApproval", "format", "stream", "instructions", "logEnabled",
-        "language", "rawJson",
+        "language",
     ]
 
     /// キー名で値を取得
@@ -90,7 +87,6 @@ public struct Settings: Codable, Sendable, Equatable {
         case "instructions": return instructions
         case "logEnabled": return logEnabled.map { "\($0)" }
         case "language": return language
-        case "rawJson": return rawJson.map { "\($0)" }
         default: return nil
         }
     }
@@ -152,9 +148,6 @@ public struct Settings: Codable, Sendable, Equatable {
             let valid = ["ja", "en"]
             guard valid.contains(value) else { throw AppError.invalidInput("Invalid value '\(value)' for language. Valid values: \(valid.joined(separator: ", "))") }
             language = value
-        case "rawJson":
-            guard let v = Bool(value) else { throw AppError.invalidInput("'\(value)' is not a valid boolean (true/false).") }
-            rawJson = v
         default:
             if let suggestion = Settings.suggestKey(for: key) {
                 throw AppError.invalidInput("Unknown setting key: '\(key)'. Did you mean '\(suggestion)'?")
@@ -184,7 +177,6 @@ public struct Settings: Codable, Sendable, Equatable {
         case "instructions": instructions = nil
         case "logEnabled": logEnabled = nil
         case "language": language = nil
-        case "rawJson": rawJson = nil
         default: break
         }
     }
@@ -219,7 +211,6 @@ public struct Settings: Codable, Sendable, Equatable {
             KeyMetadata(key: "instructions", type: "string", description: "System instructions for the model", validValues: nil, range: nil),
             KeyMetadata(key: "logEnabled", type: "boolean", description: "Enable command history and session logging", validValues: ["true", "false"], range: nil),
             KeyMetadata(key: "language", type: "string", description: "Default response language hint", validValues: ["ja", "en"], range: nil),
-            KeyMetadata(key: "rawJson", type: "boolean", description: "Output raw JSON without content wrapper (generate commands)", validValues: ["true", "false"], range: nil),
         ]
         var dict: [String: KeyMetadata] = [:]
         for item in items { dict[item.key] = item }

@@ -71,7 +71,6 @@ applefm
 | `--language` | `ja` / `en` | なし | 応答言語ヒント (respond, generate, chat) |
 | `--stream` | `Bool` | `false` | ストリーミング出力 |
 | `--schema` | `String` (パス) | なし | JSON スキーマファイル (generate コマンド) |
-| `--raw` | `Bool` | `false` | JSON 出力時に content ラッパーなしで出力 (generate コマンド) |
 | `--tool` | `String` (反復可) | なし | 有効にするビルトインツール |
 | `--tool-approval` | `ask` / `auto` | `ask` | ツール承認モード |
 | `--force` | `Bool` | `false` | 確認プロンプトをスキップ (session delete) |

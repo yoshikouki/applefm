@@ -255,7 +255,7 @@ struct SettingsTests {
         let expected = ["maxTokens", "temperature", "sampling", "samplingThreshold",
                         "samplingTop", "samplingSeed", "guardrails", "adapter",
                         "tools", "toolApproval", "format", "stream", "instructions", "logEnabled",
-                        "language", "rawJson"]
+                        "language"]
         for key in expected {
             #expect(Settings.validKeys.contains(key))
         }
@@ -426,23 +426,6 @@ struct SettingsTests {
         var settings = Settings(language: "ja")
         try settings.removeValue(forKey: "language")
         #expect(settings.language == nil)
-    }
-
-    // MARK: - rawJson Tests
-
-    @Test("setValue parses rawJson boolean")
-    func setValueRawJson() throws {
-        var settings = Settings()
-        try settings.setValue("true", forKey: "rawJson")
-        #expect(settings.rawJson == true)
-        try settings.setValue("false", forKey: "rawJson")
-        #expect(settings.rawJson == false)
-    }
-
-    @Test("value(forKey:) returns rawJson")
-    func valueForKeyRawJson() {
-        let settings = Settings(rawJson: true)
-        #expect(settings.value(forKey: "rawJson") == "true")
     }
 
     // MARK: - effectiveInstructions Tests

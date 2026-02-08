@@ -26,7 +26,7 @@ public struct InteractiveLoop: Sendable {
         settings: Settings
     ) async {
         writeStderr("applefm interactive mode (session: \(sessionName))\n")
-        writeStderr("Type /quit or press Ctrl+D to exit.\n\n")
+        writeStderr("Type /help for commands, /quit or Ctrl+D to exit.\n\n")
 
         while true {
             writeStderr(">>> ")
@@ -38,11 +38,16 @@ public struct InteractiveLoop: Sendable {
 
             let trimmed = line.trimmingCharacters(in: .whitespaces)
 
-            if trimmed == "/quit" {
-                break
+            if trimmed.isEmpty {
+                continue
             }
 
-            if trimmed.isEmpty {
+            // Handle slash commands
+            if trimmed.hasPrefix("/") {
+                let shouldBreak = handleSlashCommand(trimmed, sessionName: sessionName)
+                if shouldBreak {
+                    break
+                }
                 continue
             }
 
@@ -69,6 +74,27 @@ public struct InteractiveLoop: Sendable {
         }
 
         writeStderr("\nGoodbye.\n")
+    }
+
+    /// Returns true if the loop should break (exit)
+    public func handleSlashCommand(_ input: String, sessionName: String) -> Bool {
+        switch input {
+        case "/quit", "/exit":
+            return true
+        case "/help":
+            writeStderr("""
+            Commands:
+              /help     Show this help
+              /session  Show current session name
+              /quit     Exit interactive mode
+
+            """)
+        case "/session":
+            writeStderr("Session: \(sessionName)\n")
+        default:
+            writeStderr("Unknown command: \(input). Type /help for available commands.\n")
+        }
+        return false
     }
 
     /// セッション名を自動生成: chat-YYYYMMDD-HHmmss

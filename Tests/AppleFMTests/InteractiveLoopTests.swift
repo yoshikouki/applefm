@@ -82,6 +82,53 @@ struct InteractiveLoopTests {
         let name2 = InteractiveLoop.generateSessionName()
         #expect(name1 != name2)
     }
+
+    @Test("/exit is recognized as exit input")
+    func exitRecognized() {
+        let loop = InteractiveLoop(readInput: { nil }, writeStderr: { _ in })
+        #expect(loop.handleSlashCommand("/exit", sessionName: "test") == true)
+    }
+
+    @Test("/help outputs available commands")
+    func helpOutputsCommands() {
+        let box = SendableBox<String>()
+        let loop = InteractiveLoop(
+            readInput: { nil },
+            writeStderr: { message in box.set(message) }
+        )
+        let shouldBreak = loop.handleSlashCommand("/help", sessionName: "test")
+        #expect(shouldBreak == false)
+        let output = box.get() ?? ""
+        #expect(output.contains("/help"))
+        #expect(output.contains("/quit"))
+        #expect(output.contains("/session"))
+    }
+
+    @Test("/session outputs session name")
+    func sessionOutputsName() {
+        let box = SendableBox<String>()
+        let loop = InteractiveLoop(
+            readInput: { nil },
+            writeStderr: { message in box.set(message) }
+        )
+        let shouldBreak = loop.handleSlashCommand("/session", sessionName: "my-session")
+        #expect(shouldBreak == false)
+        #expect(box.get()?.contains("my-session") == true)
+    }
+
+    @Test("unknown slash command shows error")
+    func unknownSlashCommand() {
+        let box = SendableBox<String>()
+        let loop = InteractiveLoop(
+            readInput: { nil },
+            writeStderr: { message in box.set(message) }
+        )
+        let shouldBreak = loop.handleSlashCommand("/foo", sessionName: "test")
+        #expect(shouldBreak == false)
+        let output = box.get() ?? ""
+        #expect(output.contains("Unknown command"))
+        #expect(output.contains("/foo"))
+    }
 }
 
 /// Thread-safe box for use in @Sendable closures during tests

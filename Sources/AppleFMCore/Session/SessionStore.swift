@@ -39,6 +39,7 @@ public struct SessionStore: Sendable {
         encoder.dateEncodingStrategy = .iso8601
         let data = try encoder.encode(metadata)
         try data.write(to: url, options: .atomic)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
     }
 
     public func loadMetadata(name: String) throws -> SessionMetadata {
@@ -63,6 +64,7 @@ public struct SessionStore: Sendable {
         encoder.outputFormatting = [.prettyPrinted]
         let data = try encoder.encode(transcript)
         try data.write(to: url, options: .atomic)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
     }
 
     public func loadTranscript(name: String) throws -> Transcript {
@@ -104,6 +106,8 @@ public struct SessionStore: Sendable {
         if fm.fileExists(atPath: transcript.path) {
             try fm.removeItem(at: transcript)
         }
+        // Clean up associated log files
+        try? SessionLogger(baseDirectory: baseDirectory).deleteLog(sessionId: name)
     }
 
     public func sessionExists(name: String) -> Bool {
@@ -126,7 +130,7 @@ public struct SessionStore: Sendable {
     private func ensureDirectoryExists() throws {
         let fm = FileManager.default
         if !fm.fileExists(atPath: baseDirectory.path) {
-            try fm.createDirectory(at: baseDirectory, withIntermediateDirectories: true)
+            try fm.createDirectory(at: baseDirectory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         }
     }
 }

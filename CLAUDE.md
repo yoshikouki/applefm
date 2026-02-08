@@ -67,7 +67,7 @@ applefm
 - **SettingsStore** — Persists `Settings` as `~/.applefm/settings.json`. Priority: CLI option > settings.json > built-in default. DI via `baseDirectory` init parameter
 - **Settings** — All-optional `Codable` struct with key-value access (`value(forKey:)`, `setValue(_:forKey:)`, `removeValue(forKey:)`). Includes `KeyMetadata` for discoverability, value validation (enum/range checks), `suggestKey(for:)` for typo correction, and built-in `Preset` definitions
 - **HistoryStore** — Appends `HistoryEntry` (sessionId, ts, text, cwd) to `~/.applefm/history.jsonl`. File permissions `0o600`
-- **SessionLogger** — Writes `SessionLogEntry` to `~/.applefm/sessions/log-<date>-<sessionId>.jsonl`. Tracks user/assistant/error events per session. Tool output is not logged
+- **SessionLogger** — Writes `SessionLogEntry` to `~/.applefm/logs/session-<date>-<sessionId>.jsonl`. Tracks user/assistant/error events per session. Tool output is not logged
 
 ### Distribution
 

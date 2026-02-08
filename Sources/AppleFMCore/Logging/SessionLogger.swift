@@ -54,7 +54,7 @@ public struct SessionLogEntry: Codable, Sendable {
     }
 }
 
-/// ~/.applefm/sessions/log-<date>-<sessionId>.jsonl を管理
+/// ~/.applefm/logs/session-<date>-<sessionId>.jsonl を管理
 public struct SessionLogger: Sendable {
     public let baseDirectory: URL
 
@@ -64,7 +64,7 @@ public struct SessionLogger: Sendable {
         } else {
             self.baseDirectory = FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent(".applefm")
-                .appendingPathComponent("sessions")
+                .appendingPathComponent("logs")
         }
     }
 
@@ -107,7 +107,7 @@ public struct SessionLogger: Sendable {
         guard fm.fileExists(atPath: baseDirectory.path) else { return [] }
         let files = try fm.contentsOfDirectory(at: baseDirectory, includingPropertiesForKeys: nil)
         let suffix = "-\(sessionId).jsonl"
-        return files.filter { $0.lastPathComponent.hasPrefix("log-") && $0.lastPathComponent.hasSuffix(suffix) }
+        return files.filter { $0.lastPathComponent.hasPrefix("session-") && $0.lastPathComponent.hasSuffix(suffix) }
     }
 
     // MARK: - Private
@@ -116,7 +116,7 @@ public struct SessionLogger: Sendable {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         let dateStr = formatter.string(from: Date())
-        return baseDirectory.appendingPathComponent("log-\(dateStr)-\(sessionId).jsonl")
+        return baseDirectory.appendingPathComponent("session-\(dateStr)-\(sessionId).jsonl")
     }
 
     private func ensureDirectoryExists() throws {

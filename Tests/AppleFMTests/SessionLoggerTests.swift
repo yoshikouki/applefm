@@ -21,7 +21,7 @@ struct SessionLoggerTests {
 
         let files = try logger.findLogFiles(sessionId: "test-session")
         #expect(files.count == 1)
-        #expect(files[0].lastPathComponent.hasPrefix("log-"))
+        #expect(files[0].lastPathComponent.hasPrefix("session-"))
         #expect(files[0].lastPathComponent.hasSuffix("-test-session.jsonl"))
     }
 
@@ -34,9 +34,9 @@ struct SessionLoggerTests {
 
         let files = try logger.findLogFiles(sessionId: "my-session")
         #expect(files.count == 1)
-        // Format: log-yyyy-MM-dd-my-session.jsonl
+        // Format: session-yyyy-MM-dd-my-session.jsonl
         let name = files[0].lastPathComponent
-        let dateRegex = try Regex("^log-\\d{4}-\\d{2}-\\d{2}-my-session\\.jsonl$")
+        let dateRegex = try Regex("^session-\\d{4}-\\d{2}-\\d{2}-my-session\\.jsonl$")
         #expect(name.contains(dateRegex))
     }
 

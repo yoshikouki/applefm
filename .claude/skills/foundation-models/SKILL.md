@@ -116,6 +116,18 @@ let restoredSession = LanguageModelSession(tools: [...], transcript: transcript)
 
 ## Key Constraints
 
+### applefm 実装上の制約
+
+- `LanguageModelSession` is the center of all generation — respond, stream, generate, and tools all require a session
+- `Transcript` conforms to `RandomAccessCollection` directly (no `.entries` property)
+- `GenerationOptions.temperature` is a direct property (not nested under `Sampling`)
+- `GenerationOptions.sampling` supports `.greedy`, `.random(probabilityThreshold:seed:)`, `.random(top:seed:)` — CLI exposes via `--sampling`, `--sampling-threshold`, `--sampling-top`, `--sampling-seed`
+- Guardrails cannot be fully disabled; `.permissiveContentTransformations` is the most relaxed option
+- `@Generable`/`@Guide` macros are compile-time only — CLI uses `DynamicGenerationSchema` for user-provided schemas
+- `AsyncParsableCommand` の sync `main()` は DEBUG ビルドで即座に終了する — `main.swift` では `parseAsRoot()` + async `run()` で直接ディスパッチすること（`AppleFM.main()` を呼ばない）
+
+### Framework の制約
+
 - **Context window**: 有限。超過時は `exceededContextWindowSize` エラー。タスク分割で対処。
 - **Single request**: セッションは同時に1リクエストのみ (`isResponding` で確認)。
 - **Tools**: 3-5 個が推奨上限。description は短く。ツール呼び出し時のレイテンシは 20-34倍増加。

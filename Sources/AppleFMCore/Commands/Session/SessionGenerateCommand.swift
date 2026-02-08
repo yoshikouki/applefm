@@ -26,6 +26,9 @@ struct SessionGenerateCommand: AsyncParsableCommand {
     @Option(name: .long, help: "Output format (text or json)")
     var format: OutputFormat?
 
+    @Flag(name: .long, help: "Output raw JSON without content wrapper")
+    var raw: Bool = false
+
     func run() async throws {
         let settings = SettingsStore().load()
 
@@ -65,9 +68,14 @@ struct SessionGenerateCommand: AsyncParsableCommand {
                 options: options
             )
 
-            let formatter = OutputFormatter(format: effectiveFormat)
             let output = String(describing: response.content)
-            print(formatter.output(output))
+            let effectiveRaw = raw || settings.rawJson ?? false
+            if effectiveRaw && effectiveFormat == .json {
+                print(output)
+            } else {
+                let formatter = OutputFormatter(format: effectiveFormat)
+                print(formatter.output(output))
+            }
             if settings.isLogEnabled {
                 try? SessionLogger().log(SessionLogEntry(type: "assistant", text: output), sessionId: name)
             }

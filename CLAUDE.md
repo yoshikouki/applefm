@@ -93,7 +93,7 @@ Unit tests cover: OutputFormatter, PromptInput, SessionStore, SettingsStore, Set
 
 変更のたびにコミットする。小さな単位でこまめにコミットし、変更を積み上げていく。
 
-実装完了後は必ず `swift run applefm` で実際の CLI 挙動を確認する。テストだけでなく、ユーザーが使うのと同じ方法で動作検証を行うこと。
+実装完了後は必ず `swift run applefm` で実際の CLI 挙動を確認する。テストだけでなく、ユーザーが使うのと同じ方法で動作検証を行うこと。インタラクティブコマンド (`chat` 等) の検証には tmux を使う（→ `.claude/skills/cli-verification/SKILL.md`）。
 
 ## Release Checklist
 

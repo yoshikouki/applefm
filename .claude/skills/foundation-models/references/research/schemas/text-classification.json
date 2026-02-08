@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "properties": {
+    "category": {
+      "type": "string",
+      "enum": ["bug-report", "feature-request", "question", "documentation", "other"]
+    },
+    "confidence": { "type": "number" },
+    "reasoning": { "type": "string" },
+    "suggestedLabels": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["category", "confidence", "reasoning", "suggestedLabels"]
+}

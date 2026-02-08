@@ -137,6 +137,11 @@ let restoredSession = LanguageModelSession(tools: [...], transcript: transcript)
 - マルチターン会話: `references/research/05-multi-turn.md`
 - 多言語対応: `references/research/06-multilingual.md`
 - パフォーマンス測定: `references/research/07-performance.md`
+- FileReadTool 修正検証: `references/research/08-bugfix-verification.md`
+- ガードレール修正検証: `references/research/09-guardrails-verification.md`
+- コードレビューシナリオ: `references/research/10-code-review-scenario.md`
+- ドキュメント生成シナリオ: `references/research/11-doc-generation-scenario.md`
+- データ変換・抽出シナリオ: `references/research/12-data-extraction-scenario.md`
 
 ## References
 

@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "task": { "type": "string" },
+          "priority": {
+            "type": "string",
+            "enum": ["high", "medium", "low"]
+          },
+          "assignee": { "type": "string" }
+        },
+        "required": ["task", "priority", "assignee"]
+      }
+    }
+  },
+  "required": ["items"]
+}

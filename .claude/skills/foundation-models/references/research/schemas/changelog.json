@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["feat", "fix", "refactor", "docs", "test", "chore"]
+    },
+    "scope": { "type": "string" },
+    "summary": { "type": "string" },
+    "breaking": { "type": "boolean" }
+  },
+  "required": ["type", "scope", "summary", "breaking"]
+}

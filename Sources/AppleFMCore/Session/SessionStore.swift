@@ -106,8 +106,6 @@ public struct SessionStore: Sendable {
         if fm.fileExists(atPath: transcript.path) {
             try fm.removeItem(at: transcript)
         }
-        // Clean up associated log files
-        try? SessionLogger(baseDirectory: baseDirectory).deleteLog(sessionId: name)
     }
 
     public func sessionExists(name: String) -> Bool {

@@ -25,6 +25,8 @@ public struct Settings: Codable, Sendable, Equatable {
     public var stream: Bool?
     public var instructions: String?
     public var logEnabled: Bool?
+    public var language: String?
+    public var rawJson: Bool?
 
     public init(
         maxTokens: Int? = nil,
@@ -40,7 +42,9 @@ public struct Settings: Codable, Sendable, Equatable {
         format: String? = nil,
         stream: Bool? = nil,
         instructions: String? = nil,
-        logEnabled: Bool? = nil
+        logEnabled: Bool? = nil,
+        language: String? = nil,
+        rawJson: Bool? = nil
     ) {
         self.maxTokens = maxTokens
         self.temperature = temperature
@@ -56,6 +60,8 @@ public struct Settings: Codable, Sendable, Equatable {
         self.stream = stream
         self.instructions = instructions
         self.logEnabled = logEnabled
+        self.language = language
+        self.rawJson = rawJson
     }
 
     /// 有効な設定キー一覧
@@ -63,6 +69,7 @@ public struct Settings: Codable, Sendable, Equatable {
         "maxTokens", "temperature", "sampling", "samplingThreshold",
         "samplingTop", "samplingSeed", "guardrails", "adapter",
         "tools", "toolApproval", "format", "stream", "instructions", "logEnabled",
+        "language", "rawJson",
     ]
 
     /// キー名で値を取得
@@ -82,6 +89,8 @@ public struct Settings: Codable, Sendable, Equatable {
         case "stream": return stream.map { "\($0)" }
         case "instructions": return instructions
         case "logEnabled": return logEnabled.map { "\($0)" }
+        case "language": return language
+        case "rawJson": return rawJson.map { "\($0)" }
         default: return nil
         }
     }
@@ -139,6 +148,13 @@ public struct Settings: Codable, Sendable, Equatable {
         case "logEnabled":
             guard let v = Bool(value) else { throw AppError.invalidInput("'\(value)' is not a valid boolean (true/false).") }
             logEnabled = v
+        case "language":
+            let valid = ["ja", "en"]
+            guard valid.contains(value) else { throw AppError.invalidInput("Invalid value '\(value)' for language. Valid values: \(valid.joined(separator: ", "))") }
+            language = value
+        case "rawJson":
+            guard let v = Bool(value) else { throw AppError.invalidInput("'\(value)' is not a valid boolean (true/false).") }
+            rawJson = v
         default:
             if let suggestion = Settings.suggestKey(for: key) {
                 throw AppError.invalidInput("Unknown setting key: '\(key)'. Did you mean '\(suggestion)'?")
@@ -167,6 +183,8 @@ public struct Settings: Codable, Sendable, Equatable {
         case "stream": stream = nil
         case "instructions": instructions = nil
         case "logEnabled": logEnabled = nil
+        case "language": language = nil
+        case "rawJson": rawJson = nil
         default: break
         }
     }
@@ -200,6 +218,8 @@ public struct Settings: Codable, Sendable, Equatable {
             KeyMetadata(key: "stream", type: "boolean", description: "Enable streaming output", validValues: ["true", "false"], range: nil),
             KeyMetadata(key: "instructions", type: "string", description: "System instructions for the model", validValues: nil, range: nil),
             KeyMetadata(key: "logEnabled", type: "boolean", description: "Enable command history and session logging", validValues: ["true", "false"], range: nil),
+            KeyMetadata(key: "language", type: "string", description: "Default response language hint", validValues: ["ja", "en"], range: nil),
+            KeyMetadata(key: "rawJson", type: "boolean", description: "Output raw JSON without content wrapper (generate commands)", validValues: ["true", "false"], range: nil),
         ]
         var dict: [String: KeyMetadata] = [:]
         for item in items { dict[item.key] = item }
@@ -240,6 +260,23 @@ public struct Settings: Codable, Sendable, Equatable {
     public var isLogEnabled: Bool {
         if ProcessInfo.processInfo.environment["APPLEFM_NO_LOG"] != nil { return false }
         return logEnabled ?? true
+    }
+
+    // MARK: - Effective Instructions
+
+    /// CLI の --instructions/--language と settings の instructions/language を統合する
+    public func effectiveInstructions(cliInstructions: String?, cliLanguage: String?) -> String? {
+        let base = cliInstructions ?? instructions
+        let langHint: String? = switch cliLanguage ?? language {
+        case "ja": "Respond in Japanese."
+        case "en": "Respond in English."
+        default: nil
+        }
+        return switch (langHint, base) {
+        case let (h?, b?): "\(h) \(b)"
+        case let (h?, nil): h
+        case (nil, let b): b
+        }
     }
 
     // MARK: - Presets

@@ -254,7 +254,8 @@ struct SettingsTests {
     func validKeysComplete() {
         let expected = ["maxTokens", "temperature", "sampling", "samplingThreshold",
                         "samplingTop", "samplingSeed", "guardrails", "adapter",
-                        "tools", "toolApproval", "format", "stream", "instructions", "logEnabled"]
+                        "tools", "toolApproval", "format", "stream", "instructions", "logEnabled",
+                        "language", "rawJson"]
         for key in expected {
             #expect(Settings.validKeys.contains(key))
         }
@@ -391,6 +392,94 @@ struct SettingsTests {
         for key in Settings.validKeys {
             #expect(Settings.keyMetadata[key] != nil, "Missing metadata for key: \(key)")
         }
+    }
+
+    // MARK: - Preset Tests
+
+    // MARK: - language Tests
+
+    @Test("setValue parses language correctly")
+    func setValueLanguage() throws {
+        var settings = Settings()
+        try settings.setValue("ja", forKey: "language")
+        #expect(settings.language == "ja")
+        try settings.setValue("en", forKey: "language")
+        #expect(settings.language == "en")
+    }
+
+    @Test("setValue rejects invalid language")
+    func setValueInvalidLanguage() {
+        var settings = Settings()
+        #expect(throws: AppError.self) {
+            try settings.setValue("fr", forKey: "language")
+        }
+    }
+
+    @Test("value(forKey:) returns language")
+    func valueForKeyLanguage() {
+        let settings = Settings(language: "ja")
+        #expect(settings.value(forKey: "language") == "ja")
+    }
+
+    @Test("removeValue clears language")
+    func removeValueLanguage() throws {
+        var settings = Settings(language: "ja")
+        try settings.removeValue(forKey: "language")
+        #expect(settings.language == nil)
+    }
+
+    // MARK: - rawJson Tests
+
+    @Test("setValue parses rawJson boolean")
+    func setValueRawJson() throws {
+        var settings = Settings()
+        try settings.setValue("true", forKey: "rawJson")
+        #expect(settings.rawJson == true)
+        try settings.setValue("false", forKey: "rawJson")
+        #expect(settings.rawJson == false)
+    }
+
+    @Test("value(forKey:) returns rawJson")
+    func valueForKeyRawJson() {
+        let settings = Settings(rawJson: true)
+        #expect(settings.value(forKey: "rawJson") == "true")
+    }
+
+    // MARK: - effectiveInstructions Tests
+
+    @Test("effectiveInstructions with language only")
+    func effectiveInstructionsLanguageOnly() {
+        let settings = Settings(language: "ja")
+        let result = settings.effectiveInstructions(cliInstructions: nil, cliLanguage: nil)
+        #expect(result == "Respond in Japanese.")
+    }
+
+    @Test("effectiveInstructions with language and base instructions")
+    func effectiveInstructionsLanguageAndBase() {
+        let settings = Settings(instructions: "Be concise.", language: "en")
+        let result = settings.effectiveInstructions(cliInstructions: nil, cliLanguage: nil)
+        #expect(result == "Respond in English. Be concise.")
+    }
+
+    @Test("effectiveInstructions CLI language overrides settings")
+    func effectiveInstructionsCLILanguageOverride() {
+        let settings = Settings(language: "ja")
+        let result = settings.effectiveInstructions(cliInstructions: nil, cliLanguage: "en")
+        #expect(result == "Respond in English.")
+    }
+
+    @Test("effectiveInstructions CLI instructions overrides settings")
+    func effectiveInstructionsCLIInstructionsOverride() {
+        let settings = Settings(instructions: "Settings instructions")
+        let result = settings.effectiveInstructions(cliInstructions: "CLI instructions", cliLanguage: nil)
+        #expect(result == "CLI instructions")
+    }
+
+    @Test("effectiveInstructions returns nil when all nil")
+    func effectiveInstructionsAllNil() {
+        let settings = Settings()
+        let result = settings.effectiveInstructions(cliInstructions: nil, cliLanguage: nil)
+        #expect(result == nil)
     }
 
     // MARK: - Preset Tests

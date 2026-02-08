@@ -40,7 +40,7 @@ public enum AppError: Error, LocalizedError {
         if let genError = error as? LanguageModelSession.GenerationError {
             switch genError {
             case .exceededContextWindowSize:
-                return "Context window exceeded. Start a new session or reduce prompt size."
+                return "Context window exceeded. Start a new session or reduce prompt size. Try piping through 'head -100' or 'tail -50' to reduce input size."
             case .guardrailViolation:
                 return "Request was blocked by safety guardrails. Try rephrasing or use --guardrails permissive."
             case .rateLimited:
@@ -48,7 +48,7 @@ public enum AppError: Error, LocalizedError {
             case .refusal:
                 return "Model refused the request."
             case .unsupportedLanguageOrLocale:
-                return "Unsupported language or locale. Use 'applefm model languages' to see supported languages."
+                return "Unsupported language or locale. Try adding Japanese text to your input, or use --guardrails permissive. Use 'applefm model languages' to see supported languages."
             case .assetsUnavailable:
                 return "Model assets are unavailable. Check that Apple Intelligence is enabled in System Settings."
             case .unsupportedGuide:

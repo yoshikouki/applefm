@@ -91,7 +91,9 @@ applefm
 | `--adapter` | path | - | Custom adapter file |
 | `--stream` | flag | `false` | Stream response incrementally |
 | `--instructions` | `String` | - | System instructions (one-shot commands) |
+| `--language` | `ja`/`en` | - | Response language hint (respond, generate, chat) |
 | `--schema` | path | - | JSON schema file (generate commands) |
+| `--raw` | flag | `false` | Output raw JSON without content wrapper (generate) |
 | `--tool` | `shell`/`file-read` | - | Enable built-in tool (repeatable) |
 | `--tool-approval` | `ask`/`auto` | `ask` | Tool approval mode |
 | `--force` | flag | `false` | Skip confirmation (session delete) |
@@ -180,7 +182,7 @@ applefm respond "Hello" --temperature 1.0  # Uses 1.0, not 0.7
 
 Setting values are validated: invalid enum values, out-of-range numbers, and key typos are caught with helpful error messages.
 
-All setting keys correspond to CLI option names (camelCase): `maxTokens`, `temperature`, `sampling`, `samplingThreshold`, `samplingTop`, `samplingSeed`, `guardrails`, `adapter`, `tools`, `toolApproval`, `format`, `stream`, `instructions`, `logEnabled`.
+All setting keys correspond to CLI option names (camelCase): `maxTokens`, `temperature`, `sampling`, `samplingThreshold`, `samplingTop`, `samplingSeed`, `guardrails`, `adapter`, `tools`, `toolApproval`, `format`, `stream`, `instructions`, `logEnabled`, `language`, `rawJson`.
 
 ## Logging
 

@@ -68,8 +68,10 @@ applefm
 | `--guardrails` | `default` / `permissive` | `default` | ガードレールレベル |
 | `--adapter` | `String` (パス) | なし | カスタムアダプターファイルパス |
 | `--instructions` | `String` | なし | システムインストラクション (ワンショットコマンド) |
+| `--language` | `ja` / `en` | なし | 応答言語ヒント (respond, generate, chat) |
 | `--stream` | `Bool` | `false` | ストリーミング出力 |
 | `--schema` | `String` (パス) | なし | JSON スキーマファイル (generate コマンド) |
+| `--raw` | `Bool` | `false` | JSON 出力時に content ラッパーなしで出力 (generate コマンド) |
 | `--tool` | `String` (反復可) | なし | 有効にするビルトインツール |
 | `--tool-approval` | `ask` / `auto` | `ask` | ツール承認モード |
 | `--force` | `Bool` | `false` | 確認プロンプトをスキップ (session delete) |
@@ -110,11 +112,11 @@ applefm respond "Summarize README.md" --tool shell --tool file-read
 
 | GenerationError | 終了コード | ユーザーメッセージ |
 |---|---|---|
-| `exceededContextWindowSize` | 2 | "Context window exceeded. Start a new session or reduce prompt size." |
+| `exceededContextWindowSize` | 2 | "Context window exceeded. Start a new session or reduce prompt size. Try piping through 'head -100' or 'tail -50' to reduce input size." |
 | `guardrailViolation` | 3 | "Request was blocked by safety guardrails. Try rephrasing or use --guardrails permissive." |
 | `rateLimited` | 4 | "Rate limited. Please wait and try again." |
 | `refusal` | 5 | "Model refused the request." |
-| `unsupportedLanguageOrLocale` | 6 | "Unsupported language or locale. Use 'applefm model languages' to see supported languages." |
+| `unsupportedLanguageOrLocale` | 6 | "Unsupported language or locale. Try adding Japanese text to your input, or use --guardrails permissive. Use 'applefm model languages' to see supported languages." |
 | `assetsUnavailable` | 7 | "Model assets are unavailable. Check that Apple Intelligence is enabled in System Settings." |
 | `unsupportedGuide` | 8 | "Unsupported generation guide." |
 | `decodingFailure` | 9 | "Failed to decode generated content. Check your schema file for correctness." |

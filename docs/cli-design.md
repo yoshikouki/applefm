@@ -75,7 +75,9 @@ applefm
 | `--tool-approval` | `ask` / `auto` | `ask` | ツール承認モード |
 | `--force` | `Bool` | `false` | 確認プロンプトをスキップ (session delete) |
 
-**制約**: `--stream` と `--format json` の同時使用は不可。`validate()` でバリデーションエラーを返す。
+**制約**:
+- `--stream` と `--format json` の同時使用は不可。`validate()` でバリデーションエラーを返す。
+- `--language` はベストエフォート。オンデバイスモデルは system instructions の言語指定に完全には従わず、プロンプトの言語に引きずられる傾向がある（例: 英語プロンプト + `--language ja` → 英語で応答）。
 
 ### オプショングループ（実装上の共通化）
 

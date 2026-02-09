@@ -251,6 +251,7 @@ applefm generate "Create a fictional character" --schema person.json
 - Guardrails cannot be fully disabled; `--guardrails permissive` is the most relaxed option
 - Dynamic tool creation at runtime is not possible; all tools must be compiled into the binary
 - `--stream` and `--format json` cannot be combined (streaming outputs raw text)
+- `--language` is best-effort; the on-device model tends to follow the prompt language rather than the system instruction language hint
 
 ## Development
 
